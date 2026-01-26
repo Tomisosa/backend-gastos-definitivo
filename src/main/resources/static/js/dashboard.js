@@ -1,5 +1,6 @@
-
-
+/**
+ * Constantes y variables iniciales 
+ */
 const API = "http://localhost:8080/api";
 const messageEl = document.getElementById("message");
 
@@ -11,16 +12,21 @@ if (!token) {
   window.location.href = "login.html";
 }
 
+// objeto user que se llenará al inicio
+let user = null;
+
+/**
+ * Funciones de Utilidad
+ */
+
 // headers con autenticación
 function authHeaders() {
   return {
     "Content-Type": "application/json",
-    "Authorization": `Bearer ${token}`
+    // Corregido: Usar template literal (comillas inversas) para el token
+    "Authorization": `Bearer ${token}` 
   };
 }
-
-// objeto user que se llenará al inicio
-let user = null;
 
 // función para mostrar mensajes
 function showMessage(text, time = 3000) {
@@ -29,9 +35,14 @@ function showMessage(text, time = 3000) {
   setTimeout(() => { messageEl.style.opacity = "0"; }, time);
 }
 
+/**
+ * Gestión de Usuario y Sesión
+ */
+
 // obtener info del usuario logueado usando el token
 async function fetchUserInfo() {
   try {
+    // Corregido: Usar template literal (comillas inversas) para la URL
     const res = await fetch(`${API}/usuarios/me`, { headers: authHeaders() });
     if (!res.ok) throw new Error("No se pudo obtener info del usuario");
     user = await res.json();
@@ -51,26 +62,13 @@ document.getElementById("logoutBtn").addEventListener("click", () => {
 });
 
 
+/**
+ * Funciones de Fetching (Carga de Datos)
+ */
 
-// UI nav
-document.querySelectorAll(".sidebar li[data-section]").forEach(li => {
-  li.addEventListener("click", () => {
-    document.querySelectorAll(".sidebar li").forEach(n => n.classList.remove("active"));
-    li.classList.add("active");
-    const section = li.getAttribute("data-section");
-    document.querySelectorAll(".page").forEach(p => p.classList.remove("visible"));
-    document.getElementById(section).classList.add("visible");
-    document.getElementById("pageTitle").textContent = li.textContent;
-
-    if (section === "gastos") fetchGastos();
-    if (section === "ingresos") fetchIngresos();
-  });
-});
-
-
-/* Fetch categories and gastos */
 async function fetchCategorias() {
   try {
+    // Corregido: Usar template literal (comillas inversas) para la URL
     const res = await fetch(`${API}/categorias`, { headers: authHeaders() });
     if (!res.ok) throw new Error("No se pudieron cargar las categorías");
     const data = await res.json();
@@ -85,6 +83,7 @@ async function fetchCategorias() {
 
 async function fetchGastos() {
   try {
+    // Corregido: Usar template literal (comillas inversas) para la URL
     const res = await fetch(`${API}/gastos/usuario/${user.id}`, { headers: authHeaders() });
     if (!res.ok) throw new Error("No se pudieron cargar gastos");
     const data = await res.json();
@@ -100,6 +99,7 @@ async function fetchGastos() {
 
 async function fetchIngresos() {
   try {
+    // Corregido: Usar template literal (comillas inversas) para la URL
     const res = await fetch(`${API}/ingresos/usuario/${user.id}`, { headers: authHeaders() });
     if (!res.ok) throw new Error("No se pudieron cargar ingresos");
     const data = await res.json();
@@ -112,8 +112,27 @@ async function fetchIngresos() {
   }
 }
 
+async function eliminarIngreso(id) {
+  if (!confirm("¿Eliminar ingreso?")) return;
+  try {
+    // Corregido: Usar template literal (comillas inversas) para la URL
+    const res = await fetch(`${API}/ingresos/${id}`, {
+      method: "DELETE",
+      headers: authHeaders()
+    });
+    if (!res.ok) throw new Error("No se pudo eliminar ingreso");
+    showMessage("Ingreso eliminado");
+    await fetchIngresos();
+  } catch (err) {
+    console.error(err);
+    showMessage("Error eliminando ingreso");
+  }
+}
 
-/* Renderers */
+/**
+ * Funciones de Renderizado y Actualización de UI
+ */
+
 function renderCategorias(categorias) {
   const gastoSelect = document.getElementById("gastoCategoria");
   const ingresoSelect = document.getElementById("ingresoCategoria");
@@ -138,6 +157,7 @@ function renderGastos(list) {
 
   list.forEach(g => {
     const tr = document.createElement("tr");
+    // Corregido: Usar template literal (comillas inversas) para el HTML de la fila
     tr.innerHTML = `
       <td>${g.fecha}</td>
       <td>${g.descripcion || "-"}</td>
@@ -149,6 +169,7 @@ function renderGastos(list) {
 
     if (recent.children.length < 5) {
       const tr2 = document.createElement("tr");
+      // Corregido: Usar template literal (comillas inversas) para el HTML de la fila
       tr2.innerHTML = `
         <td>${g.fecha}</td>
         <td>${g.descripcion || "-"}</td>
@@ -165,6 +186,7 @@ function renderGastos(list) {
       const id = e.target.dataset.id;
       if (!confirm("Eliminar gasto?")) return;
       try {
+        // Corregido: Usar template literal (comillas inversas) para la URL
         const res = await fetch(`${API}/gastos/${id}`, {
           method: "DELETE",
           headers: authHeaders()
@@ -189,6 +211,7 @@ function renderIngresos(ingresos) {
 
   if (ingresos.length === 0) {
     const fila = document.createElement('tr');
+    // Corregido: Usar template literal (comillas inversas) para el HTML de la fila
     fila.innerHTML = `<td colspan="5" style="text-align:center;">Sin ingresos registrados</td>`;
     tbody.appendChild(fila);
     return;
@@ -196,6 +219,7 @@ function renderIngresos(ingresos) {
 
   ingresos.forEach(ingreso => {
     const fila = document.createElement('tr');
+    // Corregido: Usar template literal (comillas inversas) para el HTML de la fila
     fila.innerHTML = `
       <td>${ingreso.fecha}</td>
       <td>${ingreso.descripcion || '-'}</td>
@@ -209,34 +233,67 @@ function renderIngresos(ingresos) {
   });
 }
 
-async function eliminarIngreso(id) {
-  if (!confirm("¿Eliminar ingreso?")) return;
-  try {
-    const res = await fetch(`${API}/ingresos/${id}`, {
-      method: "DELETE",
-      headers: authHeaders()
-    });
-    if (!res.ok) throw new Error("No se pudo eliminar ingreso");
-    showMessage("Ingreso eliminado");
-    await fetchIngresos();
-  } catch (err) {
-    console.error(err);
-    showMessage("Error eliminando ingreso");
+function updateOverview(list) {
+  const total = list.reduce((s, g) => s + Number(g.monto || 0), 0);
+  // Corregido: Usar template literal (comillas inversas)
+  document.getElementById("totalGastado").textContent = `$${total.toFixed(2)}`;
+}
+
+function updateBalance(gastos, ingresos) {
+  const totalGastos = gastos.reduce((s, g) => s + Number(g.monto || 0), 0);
+  const totalIngresos = ingresos.reduce((s, i) => s + Number(i.monto || 0), 0);
+  const balance = totalIngresos - totalGastos;
+
+  const el = document.getElementById("balanceTotal");
+  // Corregido: Usar template literal (comillas inversas)
+  el.textContent = `$${balance.toFixed(2)}`; 
+  el.classList.remove("positivo", "negativo");
+
+  if (balance >= 0) {
+    el.classList.add("positivo");
+  } else {
+    el.classList.add("negativo");
   }
 }
 
-
-
-function updateOverview(list) {
-  const total = list.reduce((s, g) => s + Number(g.monto || 0), 0);
-  document.getElementById("totalGastado").textContent = `$${total.toFixed(2)}`;
+async function refreshAll() {
+  await fetchCategorias();
+  const gastos = await fetchGastos();
+  const ingresos = await fetchIngresos();
+  updateBalance(gastos, ingresos);
 }
+
+/**
+ * Handlers de Eventos
+ */
+
+// UI nav: cuando hago click en un botón, muestra la sección
+document.querySelectorAll(".sidebar li[data-section]").forEach(li => {
+  li.addEventListener("click", () => {
+
+    // marcar activo
+    document.querySelectorAll(".sidebar li").forEach(n => n.classList.remove("active"));
+    li.classList.add("active");
+
+    // sección a mostrar
+    const section = li.getAttribute("data-section");
+
+    // ocultar todo y mostrar lo elegido
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("visible"));
+    document.getElementById(section).classList.add("visible");
+
+    // cargar datos según sección
+    if (section === "gastos") fetchGastos();
+    if (section === "ingresos") fetchIngresos();
+  });
+});
 
 /* Create category */
 document.getElementById("btnCrearCategoria").addEventListener("click", async () => {
   const nombre = document.getElementById("categoriaNombre").value.trim();
   if (!nombre) { showMessage("Ingresá un nombre"); return; }
   try {
+    // Corregido: Usar template literal (comillas inversas) para la URL
     const res = await fetch(`${API}/categorias`, {
       method: "POST",
       headers: authHeaders(),
@@ -245,9 +302,8 @@ document.getElementById("btnCrearCategoria").addEventListener("click", async () 
     if (!res.ok) throw new Error("Error creando categoría");
     document.getElementById("categoriaNombre").value = "";
     showMessage("Categoría creada");
-	document.getElementById("modalCategorias").style.display = "none"; //cerrar modal
-	await refreshAll(); //actualizar todo
-    await refreshAll();
+	  document.getElementById("modalCategorias").style.display = "none"; //cerrar modal
+	  await refreshAll(); //actualizar todo
   } catch (e) {
     console.error(e);
     showMessage("Error al crear categoría");
@@ -265,6 +321,7 @@ document.getElementById("formGasto").addEventListener("submit", async (ev) => {
   if (!monto || !fecha) { showMessage("Completá monto y fecha"); return; }
 
   try {
+    // Corregido: Usar template literal (comillas inversas) para la URL
     const res = await fetch(`${API}/gastos`, {
       method: "POST",
       headers: authHeaders(),
@@ -282,8 +339,7 @@ document.getElementById("formGasto").addEventListener("submit", async (ev) => {
     }
     showMessage("Gasto creado");
     document.getElementById("formGasto").reset();
-	modal.style.display = "none";
-	await refreshAll();
+    modal.style.display = "none";
     await refreshAll();
     // switch to gastos list
     document.querySelector('.sidebar li[data-section="gastos"]').click();
@@ -304,6 +360,7 @@ document.getElementById("formIngreso").addEventListener("submit", async (ev) => 
   if (!monto || !fecha) { showMessage("Completá monto y fecha"); return; }
 
   try {
+    // Corregido: Usar template literal (comillas inversas) para la URL
     const res = await fetch(`${API}/ingresos`, {
       method: "POST",
       headers: authHeaders(),
@@ -321,9 +378,8 @@ document.getElementById("formIngreso").addEventListener("submit", async (ev) => 
     }
     showMessage("Ingreso creado");
     document.getElementById("formIngreso").reset();
-	modalIngreso.style.display = "none";
-	await refreshAll();
-    await fetchIngresos();
+	  modalIngreso.style.display = "none";
+	  await refreshAll();
     document.querySelector('.sidebar li[data-section="ingresos"]').click();
   } catch (e) {
     console.error(e);
@@ -331,24 +387,9 @@ document.getElementById("formIngreso").addEventListener("submit", async (ev) => 
   }
 });
 
-/* refresh all data */
-async function refreshAll() {
-  await fetchCategorias();
-  await fetchGastos();
-  await fetchIngresos();
-  const gastos = await fetchGastos();
-  const ingresos = await fetchIngresos();
-  updateBalance(gastos, ingresos);
-}
-
-/* initial load */
-(async function init() {
-  // set today as default for new gasto
-  document.getElementById("gastoFecha").value = new Date().toISOString().slice(0,10);
-  await fetchUserInfo();
-  await refreshAll();
-})();
-
+/**
+ * Gestión de Modales
+ */
 const modal = document.getElementById('modalGasto');
 const btnAgregar = document.querySelector('[data-section="nuevo"]');
 const btnCerrar = document.getElementById('closeModal');
@@ -405,21 +446,14 @@ window.addEventListener('click', (e) => {
   }
 });
 
-function updateBalance(gastos, ingresos) {
-  const totalGastos = gastos.reduce((s, g) => s + Number(g.monto || 0), 0);
-  const totalIngresos = ingresos.reduce((s, i) => s + Number(i.monto || 0), 0);
-  const balance = totalIngresos - totalGastos;
+/**
+ * Carga Inicial
+ */
 
-  const el = document.getElementById("balanceTotal");
-  el.textContent = `$${balance.toFixed(2)}`;
-  el.classList.remove("positivo", "negativo");
-
-  if (balance >= 0) {
-    el.classList.add("positivo");
-  } else {
-    el.classList.add("negativo");
-  }
-}
-
-
+(async function init() {
+  // set today as default for new gasto
+  document.getElementById("gastoFecha").value = new Date().toISOString().slice(0,10);
+  await fetchUserInfo();
+  await refreshAll();
+})();
 

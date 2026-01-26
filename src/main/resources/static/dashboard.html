@@ -8,17 +8,19 @@
 </head>
 <body>
   <div class="app">
-    <!-- Sidebar -->
     <aside class="sidebar">
       <div class="brand">
         <h1>💰 Gastos</h1>
       </div>
       <nav>
         <ul class="nav-list">
-		  <li class="nav-item active" data-section="gastos">🧾 Mis Gastos</li>
+          
+          <li class="nav-item" data-section="gastos">🧾 Mis Gastos</li>
+
           <li class="nav-item" data-section="categorias">🏷️ Categorías</li>
           <li class="nav-item" data-section="nuevo">➕ Agregar Gasto</li>
 		  <li class="nav-item" data-section="nuevo-ingreso">💵 Agregar Ingreso</li>
+          
           <li class="nav-item logout" id="logoutBtn">🚪 Cerrar sesión</li>
         </ul>
       </nav>
@@ -27,20 +29,16 @@
       </footer>
     </aside>
 
-    <!-- Main -->
     <main class="main">
-		<!-- Balance -->
-		<div id="balance" class="page">
-		  <div class="panel">
-		    <h3>Balance Total</h3>
-		    <p id="balanceTotal" class="highlight">$0.00</p>
-		  </div>
-		</div>
 
       <section class="content">
-        <!-- Overview -->
+        
         <div id="overview" class="page visible">
           <div class="cards">
+            <div class="card">
+              <h3>Balance Total</h3>
+              <p id="balanceTotal" class="highlight">$0.00</p> 
+            </div>
             <div class="card">
               <h3>Total gastado</h3>
               <p id="totalGastado" class="highlight">$0.00</p>
@@ -73,28 +71,32 @@
           </div>
         </div>
 
-        <!-- Gastos -->
-        <div id="gastos" class="page">
-          <div class="panel">
-            <h3>Mis Gastos</h3>
-            <div class="table-wrapper">
-              <table id="tablaGastos" class="table">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Descripción</th>
-                    <th>Categoría</th>
-                    <th>Monto</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
+		<div id="gastos" class="page">
+		  <div class="panel">
+		    <h3>Mis Gastos</h3>
+            <div class="filter-controls" style="margin-bottom: 1.5rem;">
+                <label for="filtroCategoriaSelect" style="color: var(--gris-claro);">Filtrar por Categoría:</label>
+                <select id="filtroCategoriaSelect" style="padding: 0.5rem; border-radius: 6px; background-color: var(--gris); color: var(--blanco); border: 1px solid var(--gris-oscuro);">
+                    <option value="all">Mostrar todas</option>
+                </select>
             </div>
-          </div>
-        </div>
-		
-		<!-- Ingresos -->
+		    <div class="table-wrapper">
+		      <table id="tablaGastos" class="table">
+		        <thead>
+		          <tr>
+		            <th>Fecha</th>
+		            <th>Descripción</th>
+		            <th>Categoría</th>
+		            <th>Monto</th>
+		            <th>Acciones</th>
+		          </tr>
+		        </thead>
+		        <tbody></tbody>
+		      </table>
+		    </div>
+		  </div>
+		</div>
+
 		<div id="ingresos" class="page">
 		  <div class="panel">
 		    <h3>Mis Ingresos</h3>
@@ -116,7 +118,6 @@
 		</div>
 
 
-		<!-- Modal Categorías -->
 		<div id="modalCategorias" class="modal">
 		  <div class="modal-content">
 		    <span class="close" id="closeCategorias">&times;</span>
@@ -130,7 +131,6 @@
 		</div>
 
 
-		<!-- Modal Agregar Gasto -->
 		<div id="modalGasto" class="modal">
 		  <div class="modal-content">
 		    <span class="close" id="closeModal">&times;</span>
@@ -161,7 +161,6 @@
 		  </div>
 		</div>
 		
-		<!-- Modal Agregar Ingreso -->
 		<div id="modalIngreso" class="modal">
 		  <div class="modal-content">
 		    <span class="close" id="closeIngreso">&times;</span>
@@ -192,7 +191,6 @@
 		  </div>
 		</div>
 
-        <!-- Mensajes -->
         <div id="message" class="toast" role="status" aria-live="polite"></div>
       </section>
     </main>

@@ -16,7 +16,7 @@ import com.example.gestiongastos.security.JwtAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
-	private final JwtAuthenticationFilter jwtAuthFilter;
+    private final JwtAuthenticationFilter jwtAuthFilter;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
@@ -28,36 +28,40 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(request -> {
                 CorsConfiguration config = new CorsConfiguration();
-                config.setAllowedOrigins(List.of("http://127.0.0.1:5500", "http://localhost:3000"));
+                config.setAllowedOriginPatterns(List.of("*")); 
                 config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+                config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
                 config.setAllowCredentials(true);
                 return config;
             }))
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-            		.requestMatchers(
-                            "/api/usuarios/register",
-                            "/api/usuarios/login"
-                        ).permitAll()
+                // Endpoints públicos
+                .requestMatchers(
+                    "/api/usuarios/register",
+                    "/api/usuarios/login"
+                ).permitAll()
 
-                        // ✅ Archivos estáticos
-                        .requestMatchers(
-                            "/css/**",
-                            "/js/**",
-                            "/images/**",
-                        
-                            "/favicon.ico",
-                            "/index.html",
-                            "/registro.html",
-                            "/login.html",
-                            "/dashboard.html",
-                            "/dashboard.js",
-                            "/styles.css"
-                        ).permitAll()
+                // Archivos y páginas públicas
+                .requestMatchers(
+                    "/",               // ← AGREGADO
+                    "/index.html",     // ← AGREGADO
+                    "/registro.html",
+                    "/login.html",
+                    "/dashboard.html",
+                    "/dashboard.js",
+                    "/styles.css",
+                    "/css/**",
+                    "/js/**",
+                    "/images/**",
+                    "/favicon.ico"
+                ).permitAll()
+
+                // Todo lo demás requiere autenticación
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
@@ -65,6 +69,5 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
-	
-
 }
+

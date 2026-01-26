@@ -19,12 +19,11 @@ import jakarta.transaction.Transactional;
 @Service
 @Transactional
 public class UsuarioServiceImp implements UsuarioService {
-	
-	private final UsuarioRepository usuarioRepository;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-    private final JwtUtil jwtUtil; // 👈 inyectado por Spring
 
-    // 👇 constructor con inyección automática
+    private final UsuarioRepository usuarioRepository;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final JwtUtil jwtUtil;
+
     public UsuarioServiceImp(UsuarioRepository usuarioRepository, JwtUtil jwtUtil) {
         this.usuarioRepository = usuarioRepository;
         this.jwtUtil = jwtUtil;
@@ -42,7 +41,15 @@ public class UsuarioServiceImp implements UsuarioService {
         u.setPassword(passwordEncoder.encode(req.getPassword()));
 
         Usuario saved = usuarioRepository.save(u);
-        return AppMapper.toUsuarioResponse(saved);
+
+        // 🔥 GENERAR TOKEN DESPUÉS DE REGISTRAR
+        String token = jwtUtil.generateToken(saved.getEmail());
+
+        // 🔥 ARMAR RESPUESTA CON TOKEN
+        UsuarioResponse res = AppMapper.toUsuarioResponse(saved);
+        res.setToken(token);
+
+        return res;
     }
 
     @Override
@@ -53,15 +60,16 @@ public class UsuarioServiceImp implements UsuarioService {
         }
 
         Usuario u = opt.get();
+
         if (!passwordEncoder.matches(req.getPassword(), u.getPassword())) {
             throw new IllegalArgumentException("Credenciales inválidas");
         }
 
-        // ✅ usamos el bean inyectado
         String token = jwtUtil.generateToken(u.getEmail());
 
         UsuarioResponse res = AppMapper.toUsuarioResponse(u);
         res.setToken(token);
+
         return res;
     }
 
@@ -71,10 +79,11 @@ public class UsuarioServiceImp implements UsuarioService {
                 .map(AppMapper::toUsuarioResponse)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
     }
-   
+
     @Override
     public Usuario findByEmail(String email) {
         return usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     }
 }
+
