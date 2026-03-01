@@ -1,24 +1,16 @@
 package com.example.gestiongastos.controller;
 
 import java.util.List;
-
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
 import com.example.gestiongastos.dto.Request.IngresoRequest;
 import com.example.gestiongastos.dto.Response.IngresoResponse;
 import com.example.gestiongastos.services.IngresoService;
-
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/ingresos")
+@CrossOrigin(origins = "*") // <-- Habilita conexión desde el celular
 public class IngresoController {
 
     private final IngresoService ingresoService;
@@ -35,11 +27,6 @@ public class IngresoController {
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<IngresoResponse>> listByUsuario(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(ingresoService.listByUsuario(usuarioId));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<IngresoResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(ingresoService.getById(id));
     }
 
     @DeleteMapping("/{id}")

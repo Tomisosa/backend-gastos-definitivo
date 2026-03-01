@@ -1,5 +1,8 @@
 package com.example.gestiongastos.security;
 
+import java.io.IOException;
+import java.util.List;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -9,16 +12,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.example.gestiongastos.model.Usuario;
 import com.example.gestiongastos.repository.UsuarioRepository;
 
-import io.jsonwebtoken.io.IOException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter{
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-	private final JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
     private final UsuarioRepository usuarioRepository;
 
     public JwtAuthenticationFilter(JwtUtil jwtUtil, UsuarioRepository usuarioRepository) {
@@ -27,30 +29,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException, java.io.IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String email;
 
+        // 🔹 Si no hay token, seguimos sin autenticar
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7);
-        email = jwtUtil.extractEmail(jwt);
+        final String jwt = authHeader.substring(7);
+        final String email = jwtUtil.extractEmail(jwt);
 
+        // 🔹 Si hay email y no hay auth previa
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
             if (jwtUtil.isTokenValid(jwt)) {
+
                 Usuario usuario = usuarioRepository.findByEmail(email).orElse(null);
+
                 if (usuario != null) {
+                    // ✅ ACÁ ESTABA EL ERROR: faltaban las authorities
                     UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(email, null, null);
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                            new UsernamePasswordAuthenticationToken(
+                                    email,
+                                    null,
+                                    List.of() // 🔥 CLAVE
+                            );
+
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
@@ -58,5 +73,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
 
         filterChain.doFilter(request, response);
     }
-	
 }

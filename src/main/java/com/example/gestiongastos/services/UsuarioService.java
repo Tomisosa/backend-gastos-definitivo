@@ -6,9 +6,11 @@ import com.example.gestiongastos.dto.Response.UsuarioResponse;
 import com.example.gestiongastos.model.Usuario;
 
 public interface UsuarioService {
-
-	UsuarioResponse register(UsuarioRegisterRequestDto request);
-    UsuarioResponse login(UsuarioLoginRequest request); // para MVP básico
+    UsuarioResponse register(UsuarioRegisterRequestDto request);
+    UsuarioResponse login(UsuarioLoginRequest request);
     UsuarioResponse findById(Long id);
-	Usuario findByEmail(String email);
+    Usuario findByEmail(String email);
+    
+    // Agregamos esta línea para que el Controller la vea
+    void updatePassword(Long userId, String newPassword); 
 }

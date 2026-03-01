@@ -36,30 +36,33 @@ public class SecurityConfig {
             }))
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Endpoints públicos
-                .requestMatchers(
-                    "/api/usuarios/register",
-                    "/api/usuarios/login"
-                ).permitAll()
+                    // 1. APIs Públicas
+                    .requestMatchers(
+                        "/api/usuarios/register",
+                        "/api/usuarios/login",
+                        "/api/cuentas/**"
+                    ).permitAll()
 
-                // Archivos y páginas públicas
-                .requestMatchers(
-                    "/",               // ← AGREGADO
-                    "/index.html",     // ← AGREGADO
-                    "/registro.html",
-                    "/login.html",
-                    "/dashboard.html",
-                    "/dashboard.js",
-                    "/styles.css",
-                    "/css/**",
-                    "/js/**",
-                    "/images/**",
-                    "/favicon.ico"
-                ).permitAll()
+                    // 2. Recursos Estáticos (ESTO ARREGLA LOS ERRORES ROJOS DE TUS FOTOS)
+                    .requestMatchers(
+                        "/",               
+                        "/index.html",     
+                        "/registro.html",
+                        "/login.html",
+                        "/dashboard.html",
+                        "/css/**",
+                        "/js/**",
+                        "/images/**",
+                        "/favicon.ico",
+                        "/manifest.json",  // ← Esto quita el error 403 de tu captura
+                        "/icono.png",      // ← Esto permite ver el logo
+                        "/*.png",          
+                        "/*.json"          
+                    ).permitAll()
 
-                // Todo lo demás requiere autenticación
-                .anyRequest().authenticated()
-            )
+                    // 3. Todo lo demás requiere token
+                    .anyRequest().authenticated()
+                )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

@@ -35,6 +35,8 @@ public class AppMapper {
         r.setDescripcion(g.getDescripcion());
         r.setMonto(g.getMonto());
         r.setFecha(g.getFecha());
+        r.setMedioPago(g.getMedioPago()); // <--- ¡Esto faltaba!
+        
         if (g.getUsuario() != null) r.setUsuarioId(g.getUsuario().getId());
         if (g.getCategoria() != null) {
             r.setCategoriaId(g.getCategoria().getId());
@@ -50,6 +52,8 @@ public class AppMapper {
         r.setDescripcion(i.getDescripcion());
         r.setMonto(i.getMonto());
         r.setFecha(i.getFecha());
+        r.setMedioPago(i.getMedioPago()); // <--- ¡Esto faltaba!
+        
         if (i.getUsuario() != null) r.setUsuarioId(i.getUsuario().getId());
         if (i.getCategoria() != null) {
             r.setCategoriaId(i.getCategoria().getId());
