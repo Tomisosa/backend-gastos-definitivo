@@ -1,16 +1,20 @@
 package com.example.gestiongastos.config;
 
-import java.util.List;
+import java.util.Arrays;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.example.gestiongastos.security.JwtAuthenticationFilter;
 
@@ -26,41 +30,19 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(request -> {
-                CorsConfiguration config = new CorsConfiguration();
-                config.setAllowedOrigins(List.of("https://gestion-gastos-frontend.vercel.app", "http://localhost:8080"));
-                config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                config.setAllowedHeaders(List.of("*"));
-                config.setAllowCredentials(true);
-                return config;
-            }))
+            .cors(Customizer.withDefaults()) 
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                    // 1. APIs Públicas
-                    .requestMatchers(
-                        "/api/usuarios/register",
-                        "/api/usuarios/login",
-                        "/api/cuentas/**"
-                    ).permitAll()
+                    // Permitir el preflight de CORS para que Vercel pase
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                    
+                    // APIs Públicas
+                    .requestMatchers("/api/usuarios/register", "/api/usuarios/login", "/api/cuentas/**").permitAll()
 
-                    // 2. Recursos Estáticos (ESTO ARREGLA LOS ERRORES ROJOS DE TUS FOTOS)
-                    .requestMatchers(
-                        "/",               
-                        "/index.html",     
-                        "/registro.html",
-                        "/login.html",
-                        "/dashboard.html",
-                        "/css/**",
-                        "/js/**",
-                        "/images/**",
-                        "/favicon.ico",
-                        "/manifest.json",  // ← Esto quita el error 403 de tu captura
-                        "/icono.png",      // ← Esto permite ver el logo
-                        "/*.png",          
-                        "/*.json"          
-                    ).permitAll()
+                    // Recursos Estáticos
+                    .requestMatchers("/", "/index.html", "/registro.html", "/login.html", "/dashboard.html", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/manifest.json", "/icono.png", "/*.png", "/*.json").permitAll()
 
-                    // 3. Todo lo demás requiere token
+                    // Todo lo demás requiere token
                     .anyRequest().authenticated()
                 )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -68,9 +50,22 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // Configuración maestra de CORS
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("https://gestion-gastos-frontend.vercel.app", "http://localhost:8080"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 }
-
