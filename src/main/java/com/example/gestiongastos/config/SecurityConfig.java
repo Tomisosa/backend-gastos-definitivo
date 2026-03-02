@@ -54,7 +54,10 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("https://gestion-gastos-frontend.vercel.app", "http://localhost:8080"));
+        
+        // ¡ACÁ ESTÁ LA MAGIA! Usamos Patterns en lugar de Origins
+        configuration.setAllowedOriginPatterns(Arrays.asList("https://gestion-gastos-frontend.vercel.app", "http://localhost:8080"));
+        
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
