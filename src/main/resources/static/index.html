@@ -3,26 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Iniciar sesión</title>
+  <title>Gestión de Gastos</title>
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icono.png" type="image/png">
   <link rel="apple-touch-icon" href="icono.png">
-
-  <script>
-    if (localStorage.getItem("token")) {
-        window.location.replace("dashboard.html");
-    }
-  </script>
 </head>
-<body class="auth">
-  <div class="form-container">
-    <h2>Iniciar sesión</h2>
-    <input type="email" id="email" placeholder="Correo">
-    <input type="password" id="password" placeholder="Contraseña">
-    <button id="btnLogin" class="btn">Entrar</button>
-    <p>¿No tienes cuenta? <a href="registro.html">Regístrate aquí</a></p>
+<body class="inicio premium-landing">
+  <div class="hero-container">
+    <div class="logo-icon">💰</div>
+    <header>
+      <h1>Gestión <span>de Gastos</span></h1>
+    </header>
+
+    <main>
+		<h2>Tu plata, tus reglas. 💸</h2>
+		<p>Olvidate de llegar a fin de mes preguntándote en qué se te fue el sueldo. Anotá tus gastos en dos toques y tomá el control.</p>
+      
+      <div class="acciones">
+        <a href="login.html" class="btn btn-principal">Iniciar Sesión</a>
+        <a href="registro.html" class="btn btn-secundario-new">Crear Cuenta</a>
+      </div>
+    </main>
   </div>
-  <script src="js/login.js"></script>
 </body>
 </html>

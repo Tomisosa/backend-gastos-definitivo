@@ -55,8 +55,14 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // ¡ACÁ ESTÁ LA MAGIA! Usamos Patterns en lugar de Origins
-        configuration.setAllowedOriginPatterns(Arrays.asList("https://gestion-gastos-frontend.vercel.app", "http://localhost:8080"));
+        // ¡ACÁ ESTÁ LA MAGIA! Agregamos tu nuevo link mibilletera.vercel.app
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+            "https://mibilletera.vercel.app",             // <-- Tu link nuevo!
+            "https://gestion-gastos-frontend.vercel.app", // Dejamos el viejo por las dudas
+            "http://localhost:8080", 
+            "http://localhost:5500",                      // Para probar en tu PC
+            "http://127.0.0.1:5500"
+        ));
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
