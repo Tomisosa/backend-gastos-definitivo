@@ -36,9 +36,11 @@ public class SecurityConfig {
                     // Permitir el preflight de CORS
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     
-                    // APIs Públicas (Agregamos billeteras y prestamos para evitar el 403)
+                 // APIs Públicas (Agregamos las rutas sin y con asteriscos para que no haya error)
                     .requestMatchers("/api/usuarios/register", "/api/usuarios/login").permitAll()
-                    .requestMatchers("/api/cuentas/**", "/api/billeteras/**", "/api/prestamos/**").permitAll()
+                    .requestMatchers("/api/cuentas/**").permitAll()
+                    .requestMatchers("/api/billeteras", "/api/billeteras/**").permitAll()  // <-- MODIFICADO
+                    .requestMatchers("/api/prestamos", "/api/prestamos/**").permitAll()    // <-- MODIFICADO
 
                     // Recursos Estáticos
                     .requestMatchers("/", "/index.html", "/registro.html", "/login.html", "/dashboard.html", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/manifest.json", "/icono.png", "/*.png", "/*.json").permitAll()
