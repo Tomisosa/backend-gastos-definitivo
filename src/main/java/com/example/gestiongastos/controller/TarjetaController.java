@@ -28,14 +28,18 @@ public class TarjetaController {
 
     @PostMapping
     public ResponseEntity<?> crearTarjeta(@RequestBody Tarjeta tarjeta) {
-        // Le enseñamos a Java a vincular la tarjeta con tu usuario
+        // Revisamos si la tarjeta viene con un usuario asignado desde el frontend
         if (tarjeta.getUsuario() != null && tarjeta.getUsuario().getId() != null) {
             Usuario u = usuarioRepository.findById(tarjeta.getUsuario().getId()).orElse(null);
             if (u == null) {
-                return ResponseEntity.badRequest().body("Usuario no encontrado");
+                return ResponseEntity.badRequest().body("Usuario no encontrado en la base de datos.");
             }
-            tarjeta.setUsuario(u);
+            tarjeta.setUsuario(u); // Asignamos el usuario completo a la tarjeta
+        } else {
+             // Si el frontend no mandó el usuario correctamente formateado, avisamos.
+             return ResponseEntity.badRequest().body("Falta enviar el ID del usuario.");
         }
+        
         return ResponseEntity.ok(tarjetaRepository.save(tarjeta));
     }
 
