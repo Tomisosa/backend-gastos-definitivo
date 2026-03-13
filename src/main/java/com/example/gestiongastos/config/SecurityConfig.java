@@ -33,11 +33,12 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults()) 
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                    // Permitir el preflight de CORS para que Vercel pase
+                    // Permitir el preflight de CORS
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     
-                    // APIs Públicas
-                    .requestMatchers("/api/usuarios/register", "/api/usuarios/login", "/api/cuentas/**").permitAll()
+                    // APIs Públicas (Agregamos billeteras y prestamos para evitar el 403)
+                    .requestMatchers("/api/usuarios/register", "/api/usuarios/login").permitAll()
+                    .requestMatchers("/api/cuentas/**", "/api/billeteras/**", "/api/prestamos/**").permitAll()
 
                     // Recursos Estáticos
                     .requestMatchers("/", "/index.html", "/registro.html", "/login.html", "/dashboard.html", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/manifest.json", "/icono.png", "/*.png", "/*.json").permitAll()
@@ -50,17 +51,15 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Configuración maestra de CORS
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // ¡ACÁ ESTÁ LA MAGIA! Agregamos tu nuevo link mibilletera.vercel.app
         configuration.setAllowedOriginPatterns(Arrays.asList(
-            "https://mibilletera.vercel.app",             // <-- Tu link nuevo!
-            "https://gestion-gastos-frontend.vercel.app", // Dejamos el viejo por las dudas
+            "https://mibilletera.vercel.app",
+            "https://gestion-gastos-frontend.vercel.app",
             "http://localhost:8080", 
-            "http://localhost:5500",                      // Para probar en tu PC
+            "http://localhost:5500",
             "http://127.0.0.1:5500"
         ));
         
