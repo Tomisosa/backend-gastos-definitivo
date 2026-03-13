@@ -1,7 +1,6 @@
 package com.example.gestiongastos.config;
 
 import java.util.Arrays;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,7 +14,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
 import com.example.gestiongastos.security.JwtAuthenticationFilter;
 
 @Configuration
@@ -33,19 +31,19 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults()) 
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                    // Permitir el preflight de CORS
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     
-                 // APIs Públicas (Agregamos las rutas sin y con asteriscos para que no haya error)
+                    // APIs Públicas
                     .requestMatchers("/api/usuarios/register", "/api/usuarios/login").permitAll()
                     .requestMatchers("/api/cuentas/**").permitAll()
-                    .requestMatchers("/api/billeteras", "/api/billeteras/**").permitAll()  // <-- MODIFICADO
-                    .requestMatchers("/api/prestamos", "/api/prestamos/**").permitAll()    // <-- MODIFICADO
+                    
+                    // Doble permiso para asegurar que no de 403
+                    .requestMatchers("/api/billeteras", "/api/billeteras/**").permitAll()
+                    .requestMatchers("/api/prestamos", "/api/prestamos/**").permitAll()
 
                     // Recursos Estáticos
                     .requestMatchers("/", "/index.html", "/registro.html", "/login.html", "/dashboard.html", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/manifest.json", "/icono.png", "/*.png", "/*.json").permitAll()
 
-                    // Todo lo demás requiere token
                     .anyRequest().authenticated()
                 )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -56,7 +54,6 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
         configuration.setAllowedOriginPatterns(Arrays.asList(
             "https://mibilletera.vercel.app",
             "https://gestion-gastos-frontend.vercel.app",
@@ -64,11 +61,9 @@ public class SecurityConfig {
             "http://localhost:5500",
             "http://127.0.0.1:5500"
         ));
-        
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
