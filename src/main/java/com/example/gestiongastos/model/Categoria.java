@@ -2,6 +2,7 @@ package com.example.gestiongastos.model;
 
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "categorias")
@@ -26,9 +27,11 @@ public class Categoria {
     public Usuario getUsuario() { return usuario; }
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
 
-    // ¡EL TRUCO MÁGICO! 
-    // Le manda el número de ID a JavaScript sin mandar todo el objeto Usuario (evita el bucle)
-    public Long getUsuarioId() {
+    // ¡EL TRUCO ARREGLADO!
+    // Le cambiamos el nombre al método a "getDuenoId" para que Spring Boot no explote.
+    // Pero le ponemos @JsonProperty("usuarioId") para que a tu JavaScript le llegue perfecto.
+    @JsonProperty("usuarioId")
+    public Long getDuenoId() {
         if (this.usuario != null) {
             return this.usuario.getId();
         }
