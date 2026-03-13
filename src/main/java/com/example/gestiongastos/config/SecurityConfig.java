@@ -31,21 +31,20 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults()) 
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    
-                    // APIs Públicas
-                    .requestMatchers("/api/usuarios/register", "/api/usuarios/login").permitAll()
-                    .requestMatchers("/api/cuentas/**").permitAll()
-                    
-                    // Doble permiso para asegurar que no de 403
-                    .requestMatchers("/api/billeteras", "/api/billeteras/**").permitAll()
-                    .requestMatchers("/api/prestamos", "/api/prestamos/**").permitAll()
+            	    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            	    
+            	    // APIs Públicas (Agregamos tarjetas también para evitar el 403)
+            	    .requestMatchers("/api/usuarios/register", "/api/usuarios/login").permitAll()
+            	    .requestMatchers("/api/cuentas/**").permitAll()
+            	    .requestMatchers("/api/billeteras", "/api/billeteras/**").permitAll()
+            	    .requestMatchers("/api/prestamos", "/api/prestamos/**").permitAll()
+            	    .requestMatchers("/api/tarjetas", "/api/tarjetas/**").permitAll() // <-- AGREGADO
 
-                    // Recursos Estáticos
-                    .requestMatchers("/", "/index.html", "/registro.html", "/login.html", "/dashboard.html", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/manifest.json", "/icono.png", "/*.png", "/*.json").permitAll()
+            	    // Recursos Estáticos
+            	    .requestMatchers("/", "/index.html", "/registro.html", "/login.html", "/dashboard.html", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/manifest.json", "/icono.png", "/*.png", "/*.json").permitAll()
 
-                    .anyRequest().authenticated()
-                )
+            	    .anyRequest().authenticated()
+            	)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
