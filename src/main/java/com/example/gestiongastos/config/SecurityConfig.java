@@ -31,20 +31,13 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults()) 
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-            	    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-            	    
-            	    // APIs Públicas (Agregamos tarjetas también para evitar el 403)
-            	    .requestMatchers("/api/usuarios/register", "/api/usuarios/login").permitAll()
-            	    .requestMatchers("/api/cuentas/**").permitAll()
-            	    .requestMatchers("/api/billeteras", "/api/billeteras/**").permitAll()
-            	    .requestMatchers("/api/prestamos", "/api/prestamos/**").permitAll()
-            	    .requestMatchers("/api/tarjetas", "/api/tarjetas/**").permitAll() // <-- AGREGADO
-
-            	    // Recursos Estáticos
-            	    .requestMatchers("/", "/index.html", "/registro.html", "/login.html", "/dashboard.html", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/manifest.json", "/icono.png", "/*.png", "/*.json").permitAll()
-
-            	    .anyRequest().authenticated()
-            	)
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/usuarios/register", "/api/usuarios/login").permitAll()
+                // Permitimos todas las llamadas a la API para evitar bloqueos 403
+                .requestMatchers("/api/**").permitAll()
+                .requestMatchers("/", "/index.html", "/registro.html", "/login.html", "/dashboard.html", "/css/**", "/js/**", "/favicon.ico", "/icono.png", "/*.png", "/*.json").permitAll()
+                .anyRequest().authenticated()
+            )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -53,13 +46,8 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList(
-            "https://mibilletera.vercel.app",
-            "https://gestion-gastos-frontend.vercel.app",
-            "http://localhost:8080", 
-            "http://localhost:5500",
-            "http://127.0.0.1:5500"
-        ));
+        // Permitimos todos los orígenes para máxima compatibilidad
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
