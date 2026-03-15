@@ -421,8 +421,13 @@ async function refreshAll() {
   const mesSeleccionado = selector ? selector.value : new Date().toISOString().slice(0, 7);
   
   const gFiltradosMes = gTodos.filter(g => {
-      const fechaComparar = g.fechaVencimiento ? g.fechaVencimiento : g.fecha;
-      return (fechaComparar||"").startsWith(mesSeleccionado);
+
+        // prioridad: mesImpacto → vencimiento → fecha
+        const fechaComparar = g.mesImpacto 
+            ? g.mesImpacto 
+            : (g.fechaVencimiento ? g.fechaVencimiento : g.fecha);
+
+        return (fechaComparar || "").startsWith(mesSeleccionado);
   });
   
   const iFiltradosMes = iTodos.filter(i => (i.fecha||"").startsWith(mesSeleccionado));
@@ -763,7 +768,8 @@ if (formGasto) {
         btnSubmit.textContent = "Guardando...";
 
         try {
-            const idAEditar = document.getElementById("gastoId").value;
+            // Aseguramos que el ID sea un número perfecto para que no haya confusiones
+            const idAEditar = document.getElementById("gastoId").value ? parseInt(document.getElementById("gastoId").value) : null;
             const descripcion = document.getElementById("gastoDescripcion").value;
             
             const montoRaw = document.getElementById("gastoMonto").value;
@@ -773,87 +779,67 @@ if (formGasto) {
             const esFijo = document.getElementById("gastoEsFijo").checked;
             const categoriaId = document.getElementById("gastoCategoria").value || null;
             
-            const fechaVto = document.getElementById("gastoVencimiento").value;
-            const pagado = document.getElementById("gastoPagado").checked;
-            const fechaReal = document.getElementById("gastoFecha").value;
-            
-            let fechaBase = pagado ? (fechaReal || fechaVto) : fechaVto;
+			const fechaVto = document.getElementById("gastoVencimiento").value;
+			const pagado = document.getElementById("gastoPagado").checked;
+			const fechaReal = document.getElementById("gastoFecha").value;
+			const mesImpacto = document.getElementById("gastoMesImpacto").value;
 
-            if (idAEditar) {
-                if (esFijo && gastoEnEdicion && gastoEnEdicion.esFijo) {
-                    const aplicarFuturo = confirm("Al ser un gasto fijo... ¿Querés guardar este cambio en TODOS los meses SIGUIENTES también?");
-                    
-                    if (aplicarFuturo) {
-                        // 1. Buscamos todos los gastos frescos (sin caché)
-                        const res = await fetch(`${API}/gastos/usuario/${user.id}?t=${Date.now()}`, { headers: authHeaders(), cache: "no-store" });
-                        const todos = await res.json();
-                        
-                        // 2. Filtramos este gasto y los que le siguen
-                        let futuros = todos.filter(g => 
-                            (String(g.usuarioId) === String(user.id)) &&
-                            g.esFijo === true && 
-                            g.descripcion === gastoEnEdicion.descripcion &&
-                            (g.fechaVencimiento || g.fecha) >= (gastoEnEdicion.fechaVencimiento || gastoEnEdicion.fecha)
-                        );
+            let fechaBase = pagado ? fechaReal : fechaVto;
 
-                        // 3. Los ordenamos por fecha para que no haya errores
-                        futuros.sort((a, b) => (a.fechaVencimiento || a.fecha).localeCompare(b.fechaVencimiento || b.fecha));
+			if (idAEditar) { 
+			    // --- MODO EDICIÓN (SIMPLIFICADO) ---
+				const body = {
+				    descripcion,
+				    monto,
+				    medioPago,
+				    fecha: pagado ? fechaReal : fechaVto,
+				    esFijo,
+				    usuarioId: user.id,
+				    categoriaId: categoriaId,
+				    fechaVencimiento: fechaVto ? fechaVto : null,
+				    pagado,
+				    mesImpacto: mesImpacto ? mesImpacto + "-01" : null
+				};
 
-                        // 4. Matemática simple: al primero le sumo 0 meses, al segundo 1, etc.
-                        for (let i = 0; i < futuros.length; i++) {
-                            const g = futuros[i];
-                            await fetch(`${API}/gastos/${g.id}`, { method: "DELETE", headers: authHeaders() });
-                            
-                            let vtoFuturo = null;
-                            if (fechaVto) {
-                                const [vYear, vMonth, vDay] = fechaVto.split('-');
-                                let nm = parseInt(vMonth) + i; // Acá le sumo los meses limpios
-                                let ny = parseInt(vYear);
-                                while (nm > 12) { nm -= 12; ny += 1; }
-                                vtoFuturo = `${ny}-${String(nm).padStart(2, '0')}-${vDay}`;
-                            }
-                            
-                            let isPagado = (g.id === parseInt(idAEditar)) ? pagado : false;
-                            let pFecha = (isPagado) ? fechaBase : vtoFuturo;
+			    const res = await fetch(`${API}/gastos/${idAEditar}`, {
+			        method: "PUT",
+			        headers: authHeaders(),
+			        body: JSON.stringify(body)
+			    });
 
-                            const bodyFuturo = { descripcion, monto, medioPago, fecha: pFecha, esFijo: true, usuarioId: user.id, categoriaId: categoriaId, fechaVencimiento: vtoFuturo, pagado: isPagado };
-                            await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(bodyFuturo) });
-                        }
-                        alert("¡Gasto actualizado para este mes y todos los siguientes!");
-                    } else {
-                        // LA VIEJA CONFIABLE (Borra y crea solo para este mes)
-                        await fetch(`${API}/gastos/${idAEditar}`, { method: "DELETE", headers: authHeaders() });
-                        const body = { descripcion, monto, medioPago, fecha: fechaBase, esFijo: true, usuarioId: user.id, categoriaId: categoriaId, fechaVencimiento: fechaVto, pagado };
-                        const res = await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
-                        if(!res.ok) throw new Error("Error al guardar el gasto");
-                        alert("¡Gasto actualizado SOLO para este mes!");
-                    }
-                } else {
-                    // LA VIEJA CONFIABLE PARA VARIABLES
-                    await fetch(`${API}/gastos/${idAEditar}`, { method: "DELETE", headers: authHeaders() });
-                    const body = { descripcion, monto, medioPago, fecha: fechaBase, esFijo, usuarioId: user.id, categoriaId: categoriaId, fechaVencimiento: fechaVto, pagado };
-                    const res = await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
-                    if(!res.ok) throw new Error("Error al guardar el gasto");
-                }
-            } else {
+			    if (!res.ok) throw new Error("Error al guardar el gasto");
+
+			    alert("¡Gasto actualizado!");
+			    
+			} else {
+                // --- MODO CREACIÓN (NUEVO GASTO) ---
                 if (esFijo) {
                     const programarFuturos = confirm("¿Desea programar este gasto para los próximos meses?\n\n👉 ACEPTAR: Se guarda en este mes y se clona para los próximos 11 meses.\n👉 CANCELAR: Se guarda SOLO en este mes como gasto fijo.");
 
                     if (programarFuturos) {
                         const [year, month, day] = fechaVto.split('-');
-
                         for (let i = 0; i < 12; i++) {
                             let m = parseInt(month) + i;
                             let y = parseInt(year);
                             while (m > 12) { m -= 12; y += 1; }
-                            
                             let safeDay = parseInt(day) > 28 ? "28" : day;
                             let nuevoVto = `${y}-${String(m).padStart(2, '0')}-${safeDay}`;
                             
                             let isPagado = (i === 0) ? pagado : false;
                             let pFecha = (i === 0 && pagado) ? fechaReal : nuevoVto;
 
-                            const bodyFijo = { descripcion, monto, medioPago, fecha: pFecha, esFijo: true, usuarioId: user.id, categoriaId: categoriaId, fechaVencimiento: nuevoVto, pagado: isPagado };
+							const bodyFijo = { 
+							descripcion,
+							monto,
+							medioPago,
+							fecha: pFecha,
+							esFijo: true,
+							usuarioId: user.id,
+							categoriaId: categoriaId,
+							fechaVencimiento: nuevoVto,
+							pagado: isPagado,
+							mesImpacto: mesImpacto ? mesImpacto + "-01" : null
+							};
                             await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(bodyFijo) });
                         }
                         alert("¡Gasto Fijo programado automáticamente para los próximos 12 meses!");
@@ -862,7 +848,18 @@ if (formGasto) {
                         await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
                     }
                 } else {
-                    const body = { descripcion, monto, medioPago, fecha: fechaBase, esFijo: false, usuarioId: user.id, categoriaId: categoriaId, fechaVencimiento: fechaVto, pagado };
+					const body = { 
+					    descripcion,
+					    monto,
+					    medioPago,
+					    fecha: fechaBase,
+					    esFijo: false,
+					    usuarioId: user.id,
+					    categoriaId: categoriaId,
+					    fechaVencimiento: fechaVto,
+					    pagado,
+					    mesImpacto: mesImpacto ? mesImpacto + "-01" : null
+					};
                     await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
                 }
             }
@@ -1066,6 +1063,12 @@ window.editarGasto = function(id) {
     document.getElementById("gastoCategoria").value = catId;
     
     document.getElementById("gastoVencimiento").value = gastoEnEdicion.fechaVencimiento || gastoEnEdicion.fecha || "";
+	
+	if(gastoEnEdicion.mesImpacto){
+	    document.getElementById("gastoMesImpacto").value = gastoEnEdicion.mesImpacto.slice(0,7);
+	}else{
+	    document.getElementById("gastoMesImpacto").value = "";
+	}
     
     const isPagado = gastoEnEdicion.pagado || false;
     document.getElementById("gastoPagado").checked = isPagado;

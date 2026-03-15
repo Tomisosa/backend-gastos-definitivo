@@ -14,17 +14,21 @@ import com.example.gestiongastos.model.Usuario;
 import com.example.gestiongastos.repository.CategoriaRepository;
 import com.example.gestiongastos.repository.GastoRepository;
 import com.example.gestiongastos.repository.UsuarioRepository;
-import com.example.gestiongastos.services.GastoService; 
+import com.example.gestiongastos.services.GastoService;
 
 @Service
-@Transactional // <-- FUNDAMENTAL: Esto maneja las conexiones a la BD sin crashear
+@Transactional
 public class GastoServiceImp implements GastoService {
 
     private final GastoRepository gastoRepository;
     private final UsuarioRepository usuarioRepository;
     private final CategoriaRepository categoriaRepository;
 
-    public GastoServiceImp(GastoRepository gastoRepository, UsuarioRepository usuarioRepository, CategoriaRepository categoriaRepository) {
+    public GastoServiceImp(
+            GastoRepository gastoRepository,
+            UsuarioRepository usuarioRepository,
+            CategoriaRepository categoriaRepository) {
+
         this.gastoRepository = gastoRepository;
         this.usuarioRepository = usuarioRepository;
         this.categoriaRepository = categoriaRepository;
@@ -32,98 +36,139 @@ public class GastoServiceImp implements GastoService {
 
     @Override
     public GastoResponse create(GastoRequest req) {
+
         Usuario usuario = usuarioRepository.findById(req.getUsuarioId())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         Gasto gasto = new Gasto();
+
         gasto.setDescripcion(req.getDescripcion());
         gasto.setMonto(req.getMonto());
         gasto.setFecha(req.getFecha());
         gasto.setMedioPago(req.getMedioPago());
-        
+
         gasto.setEsFijo(req.getEsFijo() != null ? req.getEsFijo() : false);
         gasto.setFechaVencimiento(req.getFechaVencimiento());
         gasto.setPagado(req.getPagado() != null ? req.getPagado() : false);
-        
+
+        // ⭐ NUEVO CAMPO
+        gasto.setMesImpacto(req.getMesImpacto());
+
         gasto.setUsuario(usuario);
 
         if (req.getCategoriaId() != null) {
+
             Categoria categoria = categoriaRepository.findById(req.getCategoriaId())
                     .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+
             gasto.setCategoria(categoria);
         }
 
         Gasto guardado = gastoRepository.save(gasto);
+
         return mapToResponse(guardado);
     }
 
     @Override
     public List<GastoResponse> listByUsuario(Long usuarioId) {
-        return gastoRepository.findByUsuarioId(usuarioId).stream()
+
+        return gastoRepository
+                .findByUsuarioId(usuarioId)
+                .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     public GastoResponse getById(Long id) {
-        Gasto gasto = gastoRepository.findById(id)
+
+        Gasto gasto = gastoRepository
+                .findById(id)
                 .orElseThrow(() -> new RuntimeException("Gasto no encontrado"));
+
         return mapToResponse(gasto);
     }
 
     @Override
     public void delete(Long id) {
+
         if (!gastoRepository.existsById(id)) {
             throw new RuntimeException("Gasto no encontrado");
         }
+
         gastoRepository.deleteById(id);
     }
 
     @Override
     public GastoResponse update(Long id, GastoRequest req) {
-        Gasto gasto = gastoRepository.findById(id)
+
+        Gasto gasto = gastoRepository
+                .findById(id)
                 .orElseThrow(() -> new RuntimeException("Gasto no encontrado con id: " + id));
 
         gasto.setDescripcion(req.getDescripcion());
         gasto.setMonto(req.getMonto());
         gasto.setFecha(req.getFecha());
-        gasto.setMedioPago(req.getMedioPago()); 
-        
-        if (req.getEsFijo() != null) gasto.setEsFijo(req.getEsFijo());
-        if(req.getFechaVencimiento() != null) gasto.setFechaVencimiento(req.getFechaVencimiento());
-        if(req.getPagado() != null) gasto.setPagado(req.getPagado());
+        gasto.setMedioPago(req.getMedioPago());
+
+        if (req.getEsFijo() != null)
+            gasto.setEsFijo(req.getEsFijo());
+
+        if (req.getFechaVencimiento() != null)
+            gasto.setFechaVencimiento(req.getFechaVencimiento());
+
+        if (req.getPagado() != null)
+            gasto.setPagado(req.getPagado());
+
+        // ⭐ NUEVO CAMPO
+        if (req.getMesImpacto() != null)
+            gasto.setMesImpacto(req.getMesImpacto());
 
         if (req.getCategoriaId() != null) {
-            Categoria categoria = categoriaRepository.findById(req.getCategoriaId())
+
+            Categoria categoria = categoriaRepository
+                    .findById(req.getCategoriaId())
                     .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+
             gasto.setCategoria(categoria);
+
         } else {
+
             gasto.setCategoria(null);
         }
 
         Gasto gastoActualizado = gastoRepository.save(gasto);
+
         return mapToResponse(gastoActualizado);
     }
 
     private GastoResponse mapToResponse(Gasto g) {
+
         GastoResponse res = new GastoResponse();
+
         res.setId(g.getId());
         res.setDescripcion(g.getDescripcion());
         res.setMonto(g.getMonto());
         res.setFecha(g.getFecha());
         res.setMedioPago(g.getMedioPago());
-        
-        // --- ACÁ ESTÁ EL ESCUDO CONTRA EL ERROR 500 ---
+
         res.setEsFijo(g.getEsFijo() != null ? g.getEsFijo() : false);
         res.setPagado(g.getPagado() != null ? g.getPagado() : false);
+
         res.setFechaVencimiento(g.getFechaVencimiento());
-        
-        if(g.getUsuario() != null) res.setUsuarioId(g.getUsuario().getId());
-        
+
+        // ⭐ NUEVO
+        res.setMesImpacto(g.getMesImpacto());
+
+        if (g.getUsuario() != null)
+            res.setUsuarioId(g.getUsuario().getId());
+
         if (g.getCategoria() != null) {
+
             res.setCategoriaNombre(g.getCategoria().getNombre());
             res.setCategoriaId(g.getCategoria().getId());
         }
+
         return res;
     }
 }

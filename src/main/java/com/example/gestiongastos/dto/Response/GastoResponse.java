@@ -3,24 +3,25 @@ package com.example.gestiongastos.dto.Response;
 import java.time.LocalDate;
 
 public class GastoResponse {
-    
+
     private Long id;
     private String descripcion;
     private Double monto;
     private LocalDate fecha;
     private String medioPago;
     private Long usuarioId;
-    
+
     private Long categoriaId;
-    private String categoriaNombre; 
-    
+    private String categoriaNombre;
+
     private Boolean esFijo;
-    
-    // --- NUEVOS CAMPOS ---
+
     private LocalDate fechaVencimiento;
+
     private Boolean pagado;
 
-    // --- GETTERS Y SETTERS ---
+    // ⭐ NUEVO
+    private LocalDate mesImpacto;
 
     public Boolean getEsFijo() { return esFijo; }
     public void setEsFijo(Boolean esFijo) { this.esFijo = esFijo; }
@@ -49,10 +50,12 @@ public class GastoResponse {
     public String getCategoriaNombre() { return categoriaNombre; }
     public void setCategoriaNombre(String categoriaNombre) { this.categoriaNombre = categoriaNombre; }
 
-    // Nuevos
     public LocalDate getFechaVencimiento() { return fechaVencimiento; }
     public void setFechaVencimiento(LocalDate fechaVencimiento) { this.fechaVencimiento = fechaVencimiento; }
 
     public Boolean getPagado() { return pagado; }
     public void setPagado(Boolean pagado) { this.pagado = pagado; }
+
+    public LocalDate getMesImpacto() { return mesImpacto; }
+    public void setMesImpacto(LocalDate mesImpacto) { this.mesImpacto = mesImpacto; }
 }
