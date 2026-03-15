@@ -1,12 +1,23 @@
-// --- CONFIGURACIÓN DE PRODUCCIÓN ---
+// --- CONFIGURACIÓN API ---
 const API = "https://backend-gastos-definitivo-production.up.railway.app/api";
-const token = localStorage.getItem("token");
 
-if (!token) {
+// --- DATOS DE SESIÓN ---
+const token = localStorage.getItem("token");
+const userId = localStorage.getItem("userId");
+const userName = localStorage.getItem("userName");
+
+// Si no hay sesión → volver al login
+if (!token || !userId) {
     window.location.href = "login.html";
 }
 
-let user = null;
+// Crear objeto usuario
+let user = {
+    id: Number(userId),
+    nombre: userName
+};
+
+// --- VARIABLES GLOBALES ---
 let miGrafico = null; 
 let globalGastos = [];
 let globalIngresos = [];
@@ -16,6 +27,7 @@ let gastoEnEdicion = null;
 
 window.saldosActuales = {};
 
+// --- HEADERS PARA API ---
 function authHeaders() {
   return { 
     "Content-Type": "application/json", 
@@ -23,14 +35,18 @@ function authHeaders() {
   };
 }
 
+// --- CONTROL DE SESIÓN EXPIRADA ---
 function handleAuthError(res) {
     if (res.status === 401 || res.status === 403) {
         localStorage.removeItem("token"); 
+        localStorage.removeItem("userId"); 
+        localStorage.removeItem("userName"); 
         window.location.href = "login.html"; 
         throw new Error("Sesión expirada");
     }
 }
 
+// --- FORMATO MONEDA ---
 function formatoMoneda(valor) {
   return new Intl.NumberFormat('es-AR', {
     style: 'currency',
@@ -39,19 +55,21 @@ function formatoMoneda(valor) {
   }).format(valor);
 }
 
+// --- COLORES TARJETAS ---
 function getBgColor(color) {
+
     const m = {
-        bna: "#2ac9bb, #0f766e", 
-        naranja: "#f97316, #7c2d12", 
+        bna: "#2ac9bb, #0f766e",
+        naranja: "#f97316, #7c2d12",
         azul: "#1e3a5f, #0f172a",
-        celeste: "#009ee3, #0284c7", 
-        violeta: "#8b5cf6, #4c1d95", 
-        verde: "#166534, #064e3b", 
+        celeste: "#009ee3, #0284c7",
+        violeta: "#8b5cf6, #4c1d95",
+        verde: "#166534, #064e3b",
         negro: "#262626, #000000"
     };
+
     return `linear-gradient(135deg, ${m[color] || "#333333, #111111"})`;
 }
-
 /* --- GRÁFICOS --- */
 function generarGrafico(gastos) {
   const canvas = document.getElementById('gastosChart');
@@ -166,7 +184,7 @@ function cargarSelectorFechas() {
   selector.onchange = () => refreshAll();
 }
 
-/* --- LLAMADAS API (¡ACÁ ESTÁ LA MAGIA QUE ARREGLA TODO!) --- */
+/* --- LLAMADAS API --- */
 async function fetchUserInfo() {
   try {
     const res = await fetch(`${API}/usuarios/me`, { headers: authHeaders() });
@@ -216,23 +234,19 @@ window.configurarNombresPrestamo = function() {
 
 async function fetchCategorias() { 
     try { 
-        const res = await fetch(`${API}/categorias/usuario/${user.id}`, { headers: authHeaders() }); 
+        const res = await fetch(`${API}/categorias`, { headers: authHeaders() }); 
         handleAuthError(res);
-
-        const misCategorias = await res.json();
-
+        const todas = await res.json(); 
+        // Filtro estricto restaurado
+        const misCategorias = todas.filter(cat => String(cat.usuarioId) === String(user.id));
         renderCategorias(misCategorias); 
         return misCategorias; 
-
-    } catch (e) { 
-        return []; 
-    } 
+    } catch (e) { return []; } 
 }
 
 async function fetchGastos() { 
     const res = await fetch(`${API}/gastos/usuario/${user.id}`, { headers: authHeaders() }); 
     handleAuthError(res);
-    // SIN FILTRO: La base de datos ya nos dio solo los tuyos
     globalGastos = await res.json(); 
     return globalGastos; 
 }
@@ -240,7 +254,6 @@ async function fetchGastos() {
 async function fetchIngresos() { 
     const res = await fetch(`${API}/ingresos/usuario/${user.id}`, { headers: authHeaders() }); 
     handleAuthError(res);
-    // SIN FILTRO: La base de datos ya nos dio solo los tuyos
     globalIngresos = await res.json(); 
     return globalIngresos; 
 }
@@ -266,7 +279,6 @@ async function fetchYRenderizarMisTarjetas() {
         const res = await fetch(`${API}/tarjetas/usuario/${user.id}`, { headers: authHeaders() });
         if (!res.ok) throw new Error("Error trayendo tarjetas");
         
-        // SIN FILTRO: Ya vienen listas para usar
         globalTarjetas = await res.json();
 
         const contenedor = document.getElementById("contenedorMisTarjetas");
@@ -419,8 +431,8 @@ async function refreshAll() {
       gParaTablasYGrafico = gFiltradosMes.filter(g => String(g.categoriaId) === String(catFilter));
   }
 
-  const inversiones = iTodos.filter(i => i.descripcion && i.descripcion.includes("INV:"));
-  const ingresosNormales = iFiltradosMes.filter(i => !i.descripcion.includes("INV:"));
+  const inversiones = iTodos.filter(i => (i.descripcion || "").includes("INV:"));
+  const ingresosNormales = iFiltradosMes.filter(i => !(i.descripcion || "").includes("INV:"));
 
   let totalUSD = 0;
   let totalARS_Inv = 0;
@@ -644,7 +656,7 @@ function renderConsumosCuotas(lista) {
     });
 }
 
-/* --- ACCIONES PARA GUARDAR NUEVOS ELEMENTOS (CON FORMATO JAVA) --- */
+/* --- ACCIONES PARA GUARDAR NUEVOS ELEMENTOS --- */
 
 const formBilletera = document.getElementById("formBilletera");
 if (formBilletera) {
@@ -681,13 +693,12 @@ if (formNuevaTarjeta) {
         btnSubmit.textContent = "Guardando...";
 
         try {
-            // ¡VOLVEMOS AL OBJETO! Como tu Java tiene "private Usuario usuario", hay que mandarlo así:
             const body = {
                 nombre: document.getElementById("nuevaTarjetaNombre").value.trim(),
                 diaCierre: 1, 
                 diaVencimiento: 1, 
                 color: document.getElementById("nuevaTarjetaColor").value,
-                usuario: { id: user.id } // <--- ¡ESTA ES LA ÚNICA LÍNEA QUE CAMBIA!
+                usuario: { id: user.id }
             };
 
             const res = await fetch(`${API}/tarjetas`, { 
@@ -754,7 +765,10 @@ if (formGasto) {
             const monto = document.getElementById("gastoMonto").value;
             const medioPago = document.getElementById("gastoMedio").value;
             const esFijo = document.getElementById("gastoEsFijo").checked;
-            const categoriaId = document.getElementById("gastoCategoria").value || null;
+            
+            // GASTOS REQUIEREN EL OBJETO EN JAVA
+            const catVal = document.getElementById("gastoCategoria").value;
+            const catObj = catVal ? { id: catVal } : null;
             
             const fechaVto = document.getElementById("gastoVencimiento").value;
             const pagado = document.getElementById("gastoPagado").checked;
@@ -796,19 +810,19 @@ if (formGasto) {
                             let isPagado = (g.id === parseInt(idAEditar)) ? pagado : false;
                             let pFecha = (isPagado) ? fechaBase : vtoFuturo;
 
-                            const body = { descripcion, monto, medioPago, fecha: pFecha, esFijo: true, usuarioId: user.id, categoriaId, fechaVencimiento: vtoFuturo, pagado: isPagado };
+                            const body = { descripcion, monto, medioPago, fecha: pFecha, esFijo: true, usuario: { id: user.id }, categoria: catObj, fechaVencimiento: vtoFuturo, pagado: isPagado };
                             await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
                         }
                         alert("¡Gasto actualizado para este mes y todos los siguientes!");
                     } else {
                         await fetch(`${API}/gastos/${idAEditar}`, { method: "DELETE", headers: authHeaders() });
-                        const body = { descripcion, monto, medioPago, fecha: fechaBase, esFijo, usuarioId: user.id, categoriaId, fechaVencimiento: fechaVto, pagado };
+                        const body = { descripcion, monto, medioPago, fecha: fechaBase, esFijo: true, usuario: { id: user.id }, categoria: catObj, fechaVencimiento: fechaVto, pagado };
                         await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
                         alert("¡Gasto actualizado SOLO para este mes!");
                     }
                 } else {
                     await fetch(`${API}/gastos/${idAEditar}`, { method: "DELETE", headers: authHeaders() });
-                    const body = { descripcion, monto, medioPago, fecha: fechaBase, esFijo, usuarioId: user.id, categoriaId, fechaVencimiento: fechaVto, pagado };
+                    const body = { descripcion, monto, medioPago, fecha: fechaBase, esFijo, usuario: { id: user.id }, categoria: catObj, fechaVencimiento: fechaVto, pagado };
                     await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
                 }
             } else {
@@ -829,16 +843,16 @@ if (formGasto) {
                             let isPagado = (i === 0) ? pagado : false;
                             let pFecha = (i === 0 && pagado) ? fechaReal : nuevoVto;
 
-                            const body = { descripcion, monto, medioPago, fecha: pFecha, esFijo: true, usuarioId: user.id, categoriaId, fechaVencimiento: nuevoVto, pagado: isPagado };
+                            const body = { descripcion, monto, medioPago, fecha: pFecha, esFijo: true, usuario: { id: user.id }, categoria: catObj, fechaVencimiento: nuevoVto, pagado: isPagado };
                             await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
                         }
                         alert("¡Gasto Fijo programado automáticamente para los próximos 12 meses!");
                     } else {
-                        const body = { descripcion, monto, medioPago, fecha: fechaBase, esFijo: true, usuarioId: user.id, categoriaId, fechaVencimiento: fechaVto, pagado };
+                        const body = { descripcion, monto, medioPago, fecha: fechaBase, esFijo: true, usuario: { id: user.id }, categoria: catObj, fechaVencimiento: fechaVto, pagado };
                         await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
                     }
                 } else {
-                    const body = { descripcion, monto, medioPago, fecha: fechaBase, esFijo: false, usuarioId: user.id, categoriaId, fechaVencimiento: fechaVto, pagado };
+                    const body = { descripcion, monto, medioPago, fecha: fechaBase, esFijo: false, usuario: { id: user.id }, categoria: catObj, fechaVencimiento: fechaVto, pagado };
                     await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
                 }
             }
@@ -863,13 +877,14 @@ if (formIngreso) {
     formIngreso.onsubmit = async (e) => { 
         e.preventDefault(); 
         try {
-            const body = { 
-                descripcion: document.getElementById("ingresoDescripcion").value, 
-                monto: document.getElementById("ingresoMonto").value, 
-                medioPago: document.getElementById("ingresoMedio").value, 
-                fecha: document.getElementById("ingresoFecha").value, 
-                usuarioId: user.id, 
-                categoriaId: document.getElementById("ingresoCategoria").value || null 
+            // INGRESOS USAN DTO Y REQUIEREN NUMEROS SUELTOS
+            const body = {
+                descripcion: document.getElementById("ingresoDescripcion").value || "Ingreso",
+                monto: document.getElementById("ingresoMonto").value,
+                medioPago: document.getElementById("ingresoMedio").value,
+                fecha: document.getElementById("ingresoFecha").value,
+                usuarioId: user.id,
+                categoriaId: document.getElementById("ingresoCategoria").value || null
             };
             
             const res = await fetch(`${API}/ingresos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
@@ -919,7 +934,7 @@ if (formTarjeta) {
                     medioPago: tarjetaTipo, 
                     fecha: `${yyyy}-${mm}-10`,
                     esFijo: false, 
-                    usuarioId: user.id,
+                    usuario: { id: user.id },
                     pagado: false 
                 };
                 await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
@@ -951,6 +966,7 @@ if (formInversion) {
             const monto = document.getElementById("invMonto").value;
             const fechaHoy = new Date().toISOString().split('T')[0];
 
+            // INVERSIONES APUNTAN A INGRESOS (USAN NUMEROS SUELTOS)
             const body = {
                 descripcion: `INV: ${lugar} - ${instrumento} (${moneda})`,
                 monto: monto,
@@ -974,7 +990,7 @@ if (formInversion) {
     };
 }
 
-/* --- ELIMINACIONES --- */
+/* --- ELIMINACIONES E INTERACCIONES --- */
 window.eliminarBilletera = async function(id) {
     if(confirm("¿Seguro que querés eliminar esta cuenta? No se borrarán los movimientos pasados.")) {
         await fetch(`${API}/billeteras/${id}`, { method: "DELETE", headers: authHeaders() });
@@ -1023,6 +1039,43 @@ window.eliminarGasto = async function(id) {
     await refreshAll(); 
 };
 
+// ¡ESTA ES LA FUNCIÓN QUE SE HABÍA BORRADO!
+window.editarGasto = function(id) {
+    gastoEnEdicion = globalGastos.find(g => g.id === id);
+    if (!gastoEnEdicion) return;
+
+    document.getElementById("gastoId").value = gastoEnEdicion.id;
+    document.getElementById("gastoDescripcion").value = gastoEnEdicion.descripcion;
+    document.getElementById("gastoMonto").value = gastoEnEdicion.monto;
+    document.getElementById("gastoMedio").value = gastoEnEdicion.medioPago || "EFECTIVO";
+    
+    const catId = gastoEnEdicion.categoria ? gastoEnEdicion.categoria.id : (gastoEnEdicion.categoriaId || "");
+    document.getElementById("gastoCategoria").value = catId;
+    
+    document.getElementById("gastoVencimiento").value = gastoEnEdicion.fechaVencimiento || gastoEnEdicion.fecha || "";
+    
+    const isPagado = gastoEnEdicion.pagado || false;
+    document.getElementById("gastoPagado").checked = isPagado;
+    
+    const divFechaPago = document.getElementById("divFechaPagoReal");
+    if (isPagado) {
+        divFechaPago.style.display = "block";
+        document.getElementById("gastoFecha").value = gastoEnEdicion.fecha || "";
+    } else {
+        divFechaPago.style.display = "none";
+        document.getElementById("gastoFecha").value = "";
+    }
+
+    const chkFijo = document.getElementById("gastoEsFijo");
+    if (chkFijo) {
+        chkFijo.checked = gastoEnEdicion.esFijo;
+        const camposFijos = document.getElementById('camposFijos');
+        if (camposFijos) camposFijos.style.display = gastoEnEdicion.esFijo ? 'block' : 'none';
+    }
+
+    document.getElementById("modalGasto").style.display = "flex";
+};
+
 window.eliminarIngreso = async function(id) { 
     if(confirm("¿Eliminar ingreso?")) { 
         await fetch(`${API}/ingresos/${id}`, { method: "DELETE", headers: authHeaders() }); 
@@ -1031,7 +1084,6 @@ window.eliminarIngreso = async function(id) {
 };
 
 window.crearCategoria = async function() {
-
     const inputCat = document.getElementById("nuevaCategoriaInput");
 
     if(!inputCat || !inputCat.value.trim()) { 
@@ -1040,10 +1092,10 @@ window.crearCategoria = async function() {
     }
 
     try {
-
+        // CATEGORIAS USA EL OBJETO EN JAVA
         const body = { 
             nombre: inputCat.value.trim(),
-            usuarioId: user.id
+            usuario: { id: user.id }
         };
 
         const res = await fetch(`${API}/categorias`, { 
@@ -1061,6 +1113,7 @@ window.crearCategoria = async function() {
         alert("Error al crear la categoría."); 
     }
 };
+
 window.eliminarCategoria = async function(id) { 
     if(confirm("¿Seguro que querés eliminar esta categoría?")) { 
         try {
