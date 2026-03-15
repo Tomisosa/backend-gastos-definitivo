@@ -765,11 +765,12 @@ if (formGasto) {
         try {
             const idAEditar = document.getElementById("gastoId").value;
             const descripcion = document.getElementById("gastoDescripcion").value;
-            const monto = document.getElementById("gastoMonto").value;
+            
+            const montoRaw = document.getElementById("gastoMonto").value;
+            const monto = parseFloat(montoRaw.replace(',', '.')); 
+            
             const medioPago = document.getElementById("gastoMedio").value;
             const esFijo = document.getElementById("gastoEsFijo").checked;
-            
-            // VOLVEMOS A LOS NÚMEROS: Tu backend usa GastoRequest (DTO), así que espera números
             const categoriaId = document.getElementById("gastoCategoria").value || null;
             
             const fechaVto = document.getElementById("gastoVencimiento").value;
@@ -789,17 +790,18 @@ if (formGasto) {
                         const futuros = todos.filter(g => 
                             (String(g.usuarioId) === String(user.id)) &&
                             g.esFijo === true && 
-                            g.descripcion === gastoEnEdicion.descripcion && 
-                            g.fecha >= gastoEnEdicion.fecha
+                            g.descripcion === gastoEnEdicion.descripcion
                         );
 
                         for (const g of futuros) {
                             await fetch(`${API}/gastos/${g.id}`, { method: "DELETE", headers: authHeaders() });
                             
                             let vtoFuturo = null;
+                            const fechaComparar = g.fechaVencimiento || g.fecha || fechaVto; 
+
                             if (fechaVto) {
-                                const yDiff = parseInt(g.fecha.split('-')[0]) - parseInt(fechaVto.split('-')[0]);
-                                const mDiff = parseInt(g.fecha.split('-')[1]) - parseInt(fechaVto.split('-')[1]);
+                                const yDiff = parseInt(fechaComparar.split('-')[0]) - parseInt(fechaVto.split('-')[0]);
+                                const mDiff = parseInt(fechaComparar.split('-')[1]) - parseInt(fechaVto.split('-')[1]);
                                 const totalMesesAdelante = (yDiff * 12) + mDiff;
                                 
                                 const [vYear, vMonth, vDay] = fechaVto.split('-');
@@ -817,15 +819,13 @@ if (formGasto) {
                         }
                         alert("¡Gasto actualizado para este mes y todos los siguientes!");
                     } else {
-                        await fetch(`${API}/gastos/${idAEditar}`, { method: "DELETE", headers: authHeaders() });
                         const body = { descripcion, monto, medioPago, fecha: fechaBase, esFijo: true, usuarioId: user.id, categoriaId: categoriaId, fechaVencimiento: fechaVto, pagado };
-                        await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
+                        await fetch(`${API}/gastos/${idAEditar}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(body) });
                         alert("¡Gasto actualizado SOLO para este mes!");
                     }
                 } else {
-                    await fetch(`${API}/gastos/${idAEditar}`, { method: "DELETE", headers: authHeaders() });
                     const body = { descripcion, monto, medioPago, fecha: fechaBase, esFijo, usuarioId: user.id, categoriaId: categoriaId, fechaVencimiento: fechaVto, pagado };
-                    await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
+                    await fetch(`${API}/gastos/${idAEditar}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(body) });
                 }
             } else {
                 if (esFijo) {
@@ -863,10 +863,17 @@ if (formGasto) {
             formGasto.reset(); 
             document.getElementById('gastoId').value = ""; 
             gastoEnEdicion = null;
-            document.getElementById('camposFijos').style.display = 'none'; 
+            
+            // ¡ACÁ ESTÁ EL ARREGLO! Solo intenta ocultarlo si realmente existe.
+            const divCamposFijos = document.getElementById('camposFijos');
+            if (divCamposFijos) {
+                divCamposFijos.style.display = 'none'; 
+            }
+
             await refreshAll(); 
         } catch (error) {
-            alert("Hubo un error de conexión al guardar el gasto.");
+            console.error(error); 
+            alert("Ocurrió un error al guardar: " + error.message);
         } finally {
             btnSubmit.disabled = false;
             btnSubmit.textContent = "Guardar";
