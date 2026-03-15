@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.gestiongastos.dto.Request.GastoRequest;
 import com.example.gestiongastos.dto.Response.GastoResponse;
@@ -16,6 +17,7 @@ import com.example.gestiongastos.repository.UsuarioRepository;
 import com.example.gestiongastos.services.GastoService; 
 
 @Service
+@Transactional // <-- FUNDAMENTAL: Esto maneja las conexiones a la BD sin crashear
 public class GastoServiceImp implements GastoService {
 
     private final GastoRepository gastoRepository;
@@ -39,10 +41,7 @@ public class GastoServiceImp implements GastoService {
         gasto.setFecha(req.getFecha());
         gasto.setMedioPago(req.getMedioPago());
         
-        // Fijo por defecto false
         gasto.setEsFijo(req.getEsFijo() != null ? req.getEsFijo() : false);
-        
-        // GUARDAMOS NUEVOS CAMPOS
         gasto.setFechaVencimiento(req.getFechaVencimiento());
         gasto.setPagado(req.getPagado() != null ? req.getPagado() : false);
         
@@ -91,8 +90,6 @@ public class GastoServiceImp implements GastoService {
         gasto.setMedioPago(req.getMedioPago()); 
         
         if (req.getEsFijo() != null) gasto.setEsFijo(req.getEsFijo());
-        
-        // ACTUALIZAR NUEVOS CAMPOS
         if(req.getFechaVencimiento() != null) gasto.setFechaVencimiento(req.getFechaVencimiento());
         if(req.getPagado() != null) gasto.setPagado(req.getPagado());
 
@@ -115,11 +112,11 @@ public class GastoServiceImp implements GastoService {
         res.setMonto(g.getMonto());
         res.setFecha(g.getFecha());
         res.setMedioPago(g.getMedioPago());
-        res.setEsFijo(g.getEsFijo());
         
-        // ENVIAR AL FRONT
+        // --- ACÁ ESTÁ EL ESCUDO CONTRA EL ERROR 500 ---
+        res.setEsFijo(g.getEsFijo() != null ? g.getEsFijo() : false);
+        res.setPagado(g.getPagado() != null ? g.getPagado() : false);
         res.setFechaVencimiento(g.getFechaVencimiento());
-        res.setPagado(g.getPagado());
         
         if(g.getUsuario() != null) res.setUsuarioId(g.getUsuario().getId());
         
