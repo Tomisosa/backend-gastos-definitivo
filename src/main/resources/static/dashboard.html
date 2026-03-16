@@ -75,18 +75,10 @@
         <div id="ver-gastos" class="page">
             <div class="panel" style="margin-bottom: 2rem;">
                 <h3>Gráfico de Gastos</h3>
-                <div style="position: relative; height: 220px; width: 100%; max-width: 300px; margin: auto;"><canvas id="gastosChart"></canvas></div>
+                <div style="position: relative; height: 220px; width: 100%; max-width: 500px; margin: auto;"><canvas id="gastosChart"></canvas></div>
             </div>
             <div class="filter-controls" style="margin-bottom: 1.5rem;">
                 <label>Filtrar por Categoría: <select id="filtroCategoriaSelect"><option value="all">Mostrar todas</option></select></label>
-            </div>
-
-            <div class="panel" style="border-left: 5px solid #00aae4; margin-bottom: 2rem;" id="panelResumenTarjetas">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3>💳 Resumen de Tarjetas</h3>
-                    <h3 id="totalTarjetasMes" style="color: #00aae4;">$0.00</h3>
-                </div>
-                <div id="detalleTarjetasMes" style="margin-top: 15px; display: grid; gap: 15px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));"></div>
             </div>
 
             <div class="panel" style="border-left: 5px solid #ffce56; margin-bottom: 2rem;">
@@ -94,24 +86,28 @@
                     <h3>🔒 Gastos FIJOS</h3>
                     <h3 id="totalFijos" style="color: #ffce56;">$0.00</h3>
                 </div>
-                <div class="table-wrapper"><table id="tablaGastosFijos" class="table"><thead><tr><th>Concepto</th><th>Monto</th><th>Vencimiento</th><th>Categoría</th><th>¿Pagado?</th><th>Fecha Pago</th><th>Medio</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>
+                <div class="table-wrapper tabla-con-scroll"><table id="tablaGastosFijos" class="table"><thead><tr><th>Concepto</th><th>Monto</th><th>Vencimiento</th><th>Categoría</th><th>¿Pagado?</th><th>Fecha Pago</th><th>Medio</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>
             </div>
             <div class="panel" style="border-left: 5px solid #2ac9bb;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <h3>🛒 Gastos VARIABLES</h3>
                     <h3 id="totalVariables" style="color: #2ac9bb;">$0.00</h3>
                 </div>
-                <div class="table-wrapper"><table id="tablaGastosVariables" class="table"><thead><tr><th>Concepto</th><th>Monto</th><th>Vencimiento</th><th>Categoría</th><th>¿Pagado?</th><th>Fecha Pago</th><th>Medio</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>
+                <div class="table-wrapper tabla-con-scroll"><table id="tablaGastosVariables" class="table"><thead><tr><th>Concepto</th><th>Monto</th><th>Vencimiento</th><th>Categoría</th><th>¿Pagado?</th><th>Fecha Pago</th><th>Medio</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>
             </div>
         </div>
 
-        <div id="ver-ingresos" class="page">
-          <div class="panel">
-            <h3>Mis Ingresos</h3>
-            <div class="table-wrapper"><table id="tablaIngresos" class="table"><thead><tr><th>Fecha</th><th>Descripción</th><th>Medio</th><th>Categoría</th><th>Monto</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>
-          </div>
-        </div>
-
+		<div id="ver-ingresos" class="page">
+		          <div class="panel">
+		            <h3>Mis Ingresos</h3>
+		            <div class="table-wrapper tabla-con-scroll">
+		                <table id="tablaIngresos" class="table">
+		                    <thead><tr><th>Fecha</th><th>Descripción</th><th>Medio</th><th>Categoría</th><th>Monto</th><th>Acciones</th></tr></thead>
+		                    <tbody></tbody>
+		                </table>
+		            </div>
+		          </div>
+		        </div>
         <div id="prestamos" class="page">
             <div class="panel">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -168,8 +164,8 @@
                 </div>
 				<div id="contenedorMisTarjetas" class="cards" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));"></div>
                 <h3 style="margin-top: 30px; margin-bottom: 15px; color: var(--texto-oscuro); font-size: 1.2rem;">Consumos para el mes seleccionado</h3>
-                <div class="table-wrapper">
-                    <table class="table" id="tablaTarjetas">
+				<div class="table-wrapper" style="max-height: 350px; overflow-y: auto; display: block; border-bottom: 1px solid #333;">
+				    <table class="table" id="tablaTarjetas">
                         <thead><tr><th>Fecha Compra</th><th>Descripción</th><th>Cuota Actual</th><th>Monto Cuota</th></tr></thead>
                         <tbody></tbody>
                     </table>
@@ -216,7 +212,7 @@
 				  <option value="6meses">🗓 Cada 6 meses</option>
 				</select>
 
-				<label style="margin-top:10px;">Cantidad de repeticiones</label>
+				<label style="margin-top:10px;">Cantidad de veces que se repetirá</label>
 				<input type="number" id="gastoRepeticion" min="1" max="60" value="12">
 
 				<p style="font-size:0.8rem; color:#888; margin-top:5px;">
@@ -249,6 +245,7 @@
                     <label style="flex: 1;">Cuotas <select id="tarjetaCuotas" required><option value="1">1 cuota (Un pago)</option><option value="3">3 cuotas</option><option value="6">6 cuotas</option><option value="9">9 cuotas</option><option value="12">12 cuotas</option><option value="18">18 cuotas</option><option value="24">24 cuotas</option></select></label>
                     <label style="flex: 1;">Mes de la 1° Cuota <input id="tarjetaPrimeraCuota" type="month" required /></label>
                 </div>
+				<label>Día de compra</label><input type="number" id="tarjetaDia" min="1" max="31" value="10">
                 <label>Seleccionar Tarjeta de Crédito<select id="tarjetaTipo" required></select></label>
                 <button type="submit" class="btn" style="margin-top: 20px;">Calcular y Guardar Cuotas</button>
             </form>

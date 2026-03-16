@@ -1,6 +1,6 @@
 package com.example.gestiongastos.model;
 import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty; // <-- Asegurate de importar esto
 
 @Entity
 @Table(name = "billeteras")
@@ -12,7 +12,8 @@ public class Billetera {
 
     @ManyToOne
     @JoinColumn(name = "usuario_id")
-    @JsonIgnore
+    // ¡REEMPLAZAMOS EL @JsonIgnore POR LA MAGIA!
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Usuario usuario;
 
     public Long getId() { return id; }

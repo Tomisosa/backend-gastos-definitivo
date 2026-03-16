@@ -81,10 +81,23 @@ function generarGrafico(gastos) {
   const ctx = canvas.getContext('2d');
   const datosAgrupados = {};
   
+  // Agrupar los gastos por categoría
   gastos.forEach(g => {
     const cat = g.categoriaNombre || "Sin categoría";
     datosAgrupados[cat] = (datosAgrupados[cat] || 0) + (Number(g.monto) || 0);
   });
+
+  // Paleta Institucional / Financiera
+  const coloresFinancieros = [
+      '#1e3a8a', // Azul Marino (Blue chip)
+      '#0284c7', // Azul Claro
+      '#0f766e', // Verde Esmeralda
+      '#d97706', // Ámbar
+      '#64748b', // Gris Pizarra
+      '#b91c1c', // Rojo Oscuro
+      '#4338ca', // Teal oscuro
+      '#a16207'  // Bronce
+  ];
 
   miGrafico = new Chart(ctx, {
     type: 'doughnut', 
@@ -92,19 +105,56 @@ function generarGrafico(gastos) {
       labels: Object.keys(datosAgrupados),
       datasets: [{
         data: Object.values(datosAgrupados),
-        backgroundColor: ['#2ac9bb', '#ff6384', '#36a2eb', '#ffce56', '#9966ff', '#f97316', '#8b5cf6', '#eab308'],
+        backgroundColor: coloresFinancieros,
         borderWidth: 2, 
-        borderColor: '#1a1a1a'
+        borderColor: '#ffffff', 
+        hoverOffset: 8, // Salto sutil al pasar el mouse
+        borderRadius: 0 // Cortes rectos y duros, estilo financiero puro
       }]
     },
     options: { 
         responsive: true, 
-        maintainAspectRatio: false, 
-        plugins: { legend: { position: 'bottom', labels: { color: '#ffffff' } } } 
+        maintainAspectRatio: false,
+        layout: {
+            padding: 10 // Un poco de aire
+        },
+        cutout: '75%', // Dona fina y elegante
+        plugins: { 
+            legend: { 
+                position: 'right', // Leyenda a la derecha
+                labels: { 
+                    color: '#334155', // Gris oscuro muy legible
+                    padding: 15,
+                    usePointStyle: true, 
+                    pointStyle: 'rect', // Cuadraditos prolijos
+                    font: {
+                        size: 13,
+                        family: "'Segoe UI', Arial, sans-serif",
+                        weight: 'bold'
+                    }
+                } 
+            },
+            tooltip: {
+                backgroundColor: '#1e293b', // Cartelito oscuro formal
+                titleColor: '#f8fafc',
+                bodyColor: '#f8fafc',
+                padding: 12,
+                cornerRadius: 4, // Bordes un poquito redondeados en el tooltip
+                callbacks: {
+                    // Magia: Formatear moneda y calcular porcentaje
+                    label: function(context) {
+                        let valor = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(context.raw);
+                        let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        let porcentaje = ((context.raw / total) * 100).toFixed(1); // Con 1 decimal
+                        
+                        return ` ${valor} (${porcentaje}%)`;
+                    }
+                }
+            }
+        } 
     }
   });
 }
-
 // CÁLCULO INTELIGENTE DE SALDOS
 function calcularSaldosPorCuenta(gastos, ingresos) {
     const nombres = ["BNA", "MERCADO PAGO", "EFECTIVO"];
@@ -234,7 +284,6 @@ window.configurarNombresPrestamo = function() {
 
 async function fetchCategorias() { 
     try { 
-        // ¡ACÁ ESTÁ EL ARREGLO! Le volvemos a pedir SOLO tus categorías a Java
         const res = await fetch(`${API}/categorias/usuario/${user.id}`, { headers: authHeaders() }); 
         handleAuthError(res);
         
@@ -277,9 +326,10 @@ async function fetchBilleteras() {
     } catch(e) { return []; }
 }
 
+// ACÁ SE INYECTÓ LA MEJORA PARA QUE MUESTRE LA PLATA ADENTRO
 async function fetchYRenderizarMisTarjetas() {
     try {
-        const res = await fetch(`${API}/tarjetas/usuario/${user.id}`, { headers: authHeaders() });
+        const res = await fetch(`${API}/tarjetas/usuario/${user.id}?t=${Date.now()}`, { headers: authHeaders() });
         if (!res.ok) throw new Error("Error trayendo tarjetas");
         
         globalTarjetas = await res.json();
@@ -295,10 +345,13 @@ async function fetchYRenderizarMisTarjetas() {
         
         globalTarjetas.forEach(t => {
             contenedor.innerHTML += `
-            <div class="card" style="background: ${getBgColor(t.color)}; border: none; position: relative; overflow: hidden; padding-bottom: 25px;">
+            <div class="card" style="background: ${getBgColor(t.color)}; border: none; position: relative; overflow: hidden; padding-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
                 <div style="position: absolute; right: -20px; top: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
                 <button onclick="eliminarMiTarjeta(${t.id})" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.3); border: none; color: white; padding: 6px 8px; border-radius: 50%; cursor: pointer; font-size: 1rem;" title="Eliminar tarjeta">🗑️</button>
-                <h3 style="color: #ffffff; display: flex; justify-content: space-between; align-items: center; border-bottom: none; margin-right: 30px; margin-top: 15px;">${t.nombre}</h3>
+                <h3 style="color: #ffffff; display: flex; justify-content: space-between; align-items: center; border-bottom: none; margin-right: 30px; margin-top: 10px; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px;">${t.nombre}</h3>
+                
+                <p style="color: rgba(255,255,255,0.7); margin: 15px 0 0 0; font-size: 0.85rem;">A pagar este mes:</p>
+                <h2 id="monto-tarjeta-${t.id}" style="color: #ffffff; margin: 2px 0 0 0; font-size: 1.8rem; font-weight: bold;">$0,00</h2>
             </div>`;
         });
     } catch (error) {
@@ -477,43 +530,32 @@ async function refreshAll() {
   renderConsumosCuotas(gParaTablasYGrafico); 
   renderPrestamos(pTodos); 
 
-  const panelTarjetas = document.getElementById("panelResumenTarjetas");
-  if (panelTarjetas) {
-      const baseMedios = ["BNA", "MERCADO PAGO", "EFECTIVO", "MERCADO_PAGO"];
-      globalBilleteras.forEach(b => baseMedios.push(b.nombre.toUpperCase()));
+  // --- ACÁ EMPIEZA LA MAGIA DE INYECTAR LA PLATA EN LAS TARJETAS ---
+  const baseMediosTC = ["BNA", "MERCADO PAGO", "EFECTIVO", "MERCADO_PAGO"];
+  globalBilleteras.forEach(b => baseMediosTC.push(b.nombre.toUpperCase()));
 
-      const consumosTarjeta = gParaTablasYGrafico.filter(g => !baseMedios.includes((g.medioPago||"").toUpperCase()));
-      
-      const totalesTarjetas = {};
-      let sumaTotal = 0;
-      
-      consumosTarjeta.forEach(g => {
-          const m = g.medioPago || "Tarjeta Desconocida";
-          const monto = Number(g.monto) || 0;
-          totalesTarjetas[m] = (totalesTarjetas[m] || 0) + monto;
-          sumaTotal += monto;
-      });
+  const consumosTarjeta = gParaTablasYGrafico.filter(g => !baseMediosTC.includes((g.medioPago||"").toUpperCase()));
+  
+  const totalesTarjetas = {};
+  consumosTarjeta.forEach(g => {
+      const m = g.medioPago || "Tarjeta Desconocida";
+      const monto = Number(g.monto) || 0;
+      totalesTarjetas[m] = (totalesTarjetas[m] || 0) + monto;
+  });
 
-      document.getElementById("totalTarjetasMes").textContent = formatoMoneda(sumaTotal);
-      const divDetalle = document.getElementById("detalleTarjetasMes");
-      divDetalle.innerHTML = "";
-      
-      if (Object.keys(totalesTarjetas).length === 0) {
-          divDetalle.innerHTML = "<p style='color:#888; font-size: 0.9rem;'>No hay gastos de tarjeta de crédito programados para este mes.</p>";
-      } else {
-          for (const [tarjeta, total] of Object.entries(totalesTarjetas)) {
-              divDetalle.innerHTML += `
-              <div style="background: #222; padding: 15px; border-radius: 8px; border-left: 4px solid #00aae4; display: flex; flex-direction: column; gap: 5px;">
-                  <strong style="color:#94a3b8; font-size: 0.85rem;">💳 ${tarjeta}</strong>
-                  <span style="font-size: 1.3rem; color: #fff; font-weight: bold;">${formatoMoneda(total)}</span>
-              </div>`;
-          }
-      }
-  }
+  // Buscamos cada tarjeta en la pantalla y le mandamos su saldo adentro
+  globalTarjetas.forEach(t => {
+      const idMonto = "monto-tarjeta-" + t.id;
+      const total = totalesTarjetas[t.nombre] || 0;
+      const el = document.getElementById(idMonto);
+      if (el) el.textContent = formatoMoneda(total);
+  });
+  // ------------------------------------------------------------------
 
-  const gHistoricos = gTodos.filter(g => (g.fecha||"").slice(0,7) <= mesSeleccionado);
-  const iHistoricos = iTodos.filter(i => (i.fecha||"").slice(0,7) <= mesSeleccionado);
-  calcularSaldosPorCuenta(gHistoricos, iHistoricos); 
+  const gHistoricos = gTodos.filter(g => (g.fecha || "").startsWith(mesSeleccionado));
+  const iHistoricos = iTodos.filter(i => (i.fecha || "").startsWith(mesSeleccionado));
+
+  calcularSaldosPorCuenta(gHistoricos, iHistoricos);
   
   actualizarMediosDePagoSelects();
   renderProyeccion(ingresosNormales, gFijosParaTabla, gVariablesParaTabla, inversiones);
@@ -633,7 +675,10 @@ function renderConsumosCuotas(lista) {
     if (!tbody) return;
     tbody.innerHTML = "";
     
-    const consumosTarjeta = lista.filter(g => g.descripcion && g.descripcion.includes("(Cuota"));
+	const consumosTarjeta = lista.filter(g => 
+	    g.medioPago && 
+	    !["BNA","MERCADO PAGO","MERCADO_PAGO","EFECTIVO"].includes(g.medioPago.toUpperCase())
+	);
     
     consumosTarjeta.forEach(g => {
       const acciones = `<button onclick="eliminarGasto(${g.id})" class="btn-delete" style="padding: 2px 6px; margin-left: 10px; background: none; border: none; cursor: pointer; font-size: 1.1rem;" title="Eliminar">🗑️</button>`;
@@ -982,31 +1027,39 @@ if (formTarjeta) {
             const descripcion = document.getElementById("tarjetaDescripcion").value;
             const montoTotal = parseFloat(document.getElementById("tarjetaMontoTotal").value);
             const cuotas = parseInt(document.getElementById("tarjetaCuotas").value);
-            const primeraCuota = document.getElementById("tarjetaPrimeraCuota").value; 
-            const tarjetaTipo = document.getElementById("tarjetaTipo").value; 
+            const primeraCuota = document.getElementById("tarjetaPrimeraCuota").value;
+			const diaCompra = parseInt(document.getElementById("tarjetaDia").value) || 10;            
+			const tarjetaTipo = document.getElementById("tarjetaTipo").value; 
             
-            const montoPorCuota = (montoTotal / cuotas).toFixed(2);
+            const montoPorCuota = Number((montoTotal / cuotas).toFixed(2));
             const [year, month] = primeraCuota.split('-');
-            let fechaActual = new Date(year, month - 1, 10); 
+            let fechaActual = new Date(year, month - 1, diaCompra);
 
-            for (let i = 1; i <= cuotas; i++) {
-                const yyyy = fechaActual.getFullYear();
-                const mm = String(fechaActual.getMonth() + 1).padStart(2, '0');
-                
-                const textoDesc = cuotas === 1 ? descripcion : `${descripcion} (Cuota ${i}/${cuotas})`;
-                
-                const body = {
-                    descripcion: textoDesc,
-                    monto: montoPorCuota,
-                    medioPago: tarjetaTipo, 
-                    fecha: `${yyyy}-${mm}-10`,
-                    esFijo: false, 
-                    usuario: { id: user.id },
-                    pagado: false 
-                };
-                await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
-                fechaActual.setMonth(fechaActual.getMonth() + 1);
-            }
+			for (let i = 1; i <= cuotas; i++) {
+			    const yyyy = fechaActual.getFullYear();
+			    const mm = String(fechaActual.getMonth() + 1).padStart(2, '0');
+			    const dd = String(fechaActual.getDate()).padStart(2, '0');
+
+			    const textoDesc = `${descripcion} (Cuota ${i}/${cuotas})`;
+
+			    const body = {
+			        descripcion: textoDesc,
+			        monto: montoPorCuota,
+			        medioPago: tarjetaTipo,
+			        fecha: `${yyyy}-${mm}-${dd}`,
+			        esFijo: false,
+			        usuarioId: user.id,
+			        pagado: false
+			    };
+
+			    await fetch(`${API}/gastos`, {
+			        method: "POST",
+			        headers: authHeaders(),
+			        body: JSON.stringify(body)
+			    });
+
+			    fechaActual.setMonth(fechaActual.getMonth() + 1);
+			}
 
             document.getElementById("modalTarjeta").style.display = "none";
             formTarjeta.reset();
