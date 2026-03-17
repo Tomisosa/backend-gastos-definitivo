@@ -35,7 +35,15 @@ public class AppMapper {
         r.setDescripcion(g.getDescripcion());
         r.setMonto(g.getMonto());
         r.setFecha(g.getFecha());
-        r.setMedioPago(g.getMedioPago()); // <--- ¡Esto faltaba!
+        r.setMedioPago(g.getMedioPago()); 
+        
+        // AGREGAMOS EL MES DE IMPACTO PARA LOS GASTOS (por si te faltaba)
+        r.setMesImpacto(g.getMesImpacto());
+        
+        // AGREGAMOS ESTOS DOS QUE TAMBIÉN SON CLAVES PARA LOS GASTOS
+        r.setFechaVencimiento(g.getFechaVencimiento());
+        r.setPagado(g.getPagado());
+        r.setEsFijo(g.getEsFijo());
         
         if (g.getUsuario() != null) r.setUsuarioId(g.getUsuario().getId());
         if (g.getCategoria() != null) {
@@ -52,7 +60,10 @@ public class AppMapper {
         r.setDescripcion(i.getDescripcion());
         r.setMonto(i.getMonto());
         r.setFecha(i.getFecha());
-        r.setMedioPago(i.getMedioPago()); // <--- ¡Esto faltaba!
+        r.setMedioPago(i.getMedioPago()); 
+        
+        // --- ¡ACÁ ESTÁ LA CLAVE PARA LOS INGRESOS! ---
+        r.setMesImpacto(i.getMesImpacto());
         
         if (i.getUsuario() != null) r.setUsuarioId(i.getUsuario().getId());
         if (i.getCategoria() != null) {

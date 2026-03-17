@@ -12,7 +12,12 @@ public class Ingreso {
     private String descripcion;
     private Double monto;
     private LocalDate fecha;
-    @Column(name = "medio_pago") private String medioPago;
+    
+    @Column(name = "mes_impacto")
+    private String mesImpacto; 
+    
+    @Column(name = "medio_pago") 
+    private String medioPago;
 
     @ManyToOne
     @JoinColumn(name = "usuario_id")
@@ -38,4 +43,8 @@ public class Ingreso {
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
     public Categoria getCategoria() { return categoria; }
     public void setCategoria(Categoria categoria) { this.categoria = categoria; }
+
+    // ACA FALTABAN ESTOS DOS:
+    public String getMesImpacto() { return mesImpacto; }
+    public void setMesImpacto(String mesImpacto) { this.mesImpacto = mesImpacto; }
 }

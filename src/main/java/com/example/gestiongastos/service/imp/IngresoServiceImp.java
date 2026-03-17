@@ -44,15 +44,18 @@ public class IngresoServiceImp implements IngresoService {
                     .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada"));
         }
 
-        Ingreso i = new Ingreso(); // Ya no dará error gracias al constructor vacío
+        Ingreso i = new Ingreso(); 
         i.setDescripcion(req.getDescripcion());
         
-        // --- CORRECCIÓN IMPORTANTE AQUÍ: .doubleValue() ---
         if (req.getMonto() != null) {
             i.setMonto(req.getMonto().doubleValue());
         }
         
         i.setFecha(req.getFecha());
+        
+        // --- AGREGAMOS EL MES DE IMPACTO ACÁ ---
+        i.setMesImpacto(req.getMesImpacto());
+        
         i.setMedioPago(req.getMedioPago());
         i.setUsuario(u);
         i.setCategoria(c);
@@ -93,12 +96,15 @@ public class IngresoServiceImp implements IngresoService {
 
         ingreso.setDescripcion(req.getDescripcion());
         
-        // --- CORRECCIÓN IMPORTANTE AQUÍ TAMBIÉN: .doubleValue() ---
         if (req.getMonto() != null) {
             ingreso.setMonto(req.getMonto().doubleValue());
         }
         
         ingreso.setFecha(req.getFecha());
+        
+        // --- Y AGREGAMOS EL MES DE IMPACTO ACÁ TAMBIÉN ---
+        ingreso.setMesImpacto(req.getMesImpacto());
+        
         ingreso.setMedioPago(req.getMedioPago());
 
         if (req.getCategoriaId() != null) {

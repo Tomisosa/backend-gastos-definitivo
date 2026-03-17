@@ -24,6 +24,9 @@ let globalIngresos = [];
 let globalTarjetas = []; 
 let globalBilleteras = []; 
 let gastoEnEdicion = null; 
+let saldosOcultos = true; // Por defecto arrancan tapados (DÉBITO)
+let saldosTarjetasOcultos = true; // Por defecto arrancan tapados (CRÉDITO)
+let saldosAhorrosOcultos = true; // Por defecto arrancan tapados (AHORROS)
 
 window.saldosActuales = {};
 
@@ -65,7 +68,8 @@ function getBgColor(color) {
         celeste: "#009ee3, #0284c7",
         violeta: "#8b5cf6, #4c1d95",
         verde: "#166534, #064e3b",
-        negro: "#262626, #000000"
+        negro: "#262626, #000000",
+        rojo: "#dc2626, #7f1d1d" // <--- ACÁ ESTÁ EL NUEVO ROJO
     };
 
     return `linear-gradient(135deg, ${m[color] || "#333333, #111111"})`;
@@ -158,12 +162,9 @@ function generarGrafico(gastos) {
 // CÁLCULO INTELIGENTE DE SALDOS
 function calcularSaldosPorCuenta(gastos, ingresos) {
     const nombres = ["BNA", "MERCADO PAGO", "EFECTIVO"];
-    
     globalBilleteras.forEach(b => {
         const nom = b.nombre.toUpperCase();
-        if (!nombres.includes(nom)) {
-            nombres.push(nom);
-        }
+        if (!nombres.includes(nom)) nombres.push(nom);
     });
 
     const saldos = {};
@@ -194,17 +195,16 @@ function calcularSaldosPorCuenta(gastos, ingresos) {
             if(b !== "BNA" && b !== "MERCADO PAGO" && b !== "EFECTIVO") color = "#a855f7"; 
 
             const customObj = globalBilleteras.find(x => x.nombre.toUpperCase() === b);
-            let btnEliminar = '';
-            
-            if(customObj) {
-                btnEliminar = `<button onclick="eliminarBilletera(${customObj.id})" style="position: absolute; top: 5px; right: 5px; background: none; border: none; cursor: pointer; color: #888; font-size: 0.9rem;" title="Ocultar cuenta">✖</button>`;
-            }
+            let btnEliminar = customObj ? `<button onclick="eliminarBilletera(${customObj.id})" style="position: absolute; top: 5px; right: 5px; background: none; border: none; cursor: pointer; color: #888; font-size: 0.9rem;">✖</button>` : '';
+
+            // --- ACÁ ESTÁ LA MAGIA DEL OJO ---
+            const montoAMostrar = saldosOcultos ? "••••••" : formatoMoneda(saldos[b]);
 
             contenedor.innerHTML += `
             <div class="card-small" style="min-width: 160px; background: var(--bg-saldos); padding: 15px; border-radius: 12px; border-left: 4px solid ${color}; position: relative;">
                 ${btnEliminar}
                 <h4 style="color: #94a3b8; font-size: 0.8rem; margin: 0;">🏦 ${b}</h4>
-                <p style="font-size: 1.3rem; font-weight: bold; color: ${color}; margin: 5px 0 0 0;">${formatoMoneda(saldos[b])}</p>
+                <p style="font-size: 1.3rem; font-weight: bold; color: ${color}; margin: 5px 0 0 0;">${montoAMostrar}</p>
             </div>`;
         });
     }
@@ -344,6 +344,9 @@ async function fetchYRenderizarMisTarjetas() {
         }
         
         globalTarjetas.forEach(t => {
+            // Incorporamos el ojito acá también para privacidad total
+            const montoAMostrar = saldosTarjetasOcultos ? "••••••" : "$0,00";
+
             contenedor.innerHTML += `
             <div class="card" style="background: ${getBgColor(t.color)}; border: none; position: relative; overflow: hidden; padding-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
                 <div style="position: absolute; right: -20px; top: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
@@ -351,7 +354,7 @@ async function fetchYRenderizarMisTarjetas() {
                 <h3 style="color: #ffffff; display: flex; justify-content: space-between; align-items: center; border-bottom: none; margin-right: 30px; margin-top: 10px; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px;">${t.nombre}</h3>
                 
                 <p style="color: rgba(255,255,255,0.7); margin: 15px 0 0 0; font-size: 0.85rem;">A pagar este mes:</p>
-                <h2 id="monto-tarjeta-${t.id}" style="color: #ffffff; margin: 2px 0 0 0; font-size: 1.8rem; font-weight: bold;">$0,00</h2>
+                <h2 id="monto-tarjeta-${t.id}" style="color: #ffffff; margin: 2px 0 0 0; font-size: 1.8rem; font-weight: bold;">${montoAMostrar}</h2>
             </div>`;
         });
     } catch (error) {
@@ -385,31 +388,49 @@ function actualizarMediosDePagoSelects() {
 }
 
 function renderCategorias(categorias) {
+  // 1. Ordenamos alfabéticamente
   categorias.sort((a, b) => a.nombre.localeCompare(b.nombre));
 
+  // 2. Actualizamos el contador de la tarjeta de inicio
   const contadorEl = document.getElementById("countCategorias");
   if (contadorEl) contadorEl.textContent = categorias.length;
 
+  // 3. Capturamos todos los selectores (los 5 que usamos ahora)
   const gSelect = document.getElementById("gastoCategoria");
   const iSelect = document.getElementById("ingresoCategoria");
+  const tSelect = document.getElementById("tarjetaCategoria"); 
+  const eSelect = document.getElementById("editCuotaCategoria"); 
   const filtroSel = document.getElementById("filtroCategoriaSelect");
   const listaCat = document.getElementById("listaCategoriasGestion");
   
-  if (gSelect) {
-    [gSelect, iSelect, filtroSel].forEach(select => {
-      if (!select) return;
-      const valPrevio = select.value;
-      select.innerHTML = select === filtroSel ? '<option value="all">Mostrar todas</option>' : '<option value="">Sin categoría</option>';
-      categorias.forEach(cat => { 
-          const opt = document.createElement("option"); 
-          opt.value = cat.id; opt.textContent = cat.nombre; 
-          select.appendChild(opt); 
-      });
-      if(valPrevio) select.value = valPrevio;
+  // 4. Llenamos todos los selectores de una sola vez
+  [gSelect, iSelect, tSelect, eSelect, filtroSel].forEach(select => {
+    if (!select) return;
+    
+    const valPrevio = select.value;
+
+    // Si es el filtro ponemos "Mostrar todas", si es formulario ponemos "Sin categoría"
+    select.innerHTML = select === filtroSel 
+      ? '<option value="all">Mostrar todas</option>' 
+      : '<option value="">Sin categoría</option>';
+
+    categorias.forEach(cat => { 
+        const opt = document.createElement("option"); 
+        opt.value = cat.id; 
+        opt.textContent = cat.nombre; 
+        select.appendChild(opt); 
     });
-    if (filtroSel) filtroSel.onchange = () => refreshAll();
+
+    // Mantenemos lo que el usuario ya tenía seleccionado para que no se le borre
+    if(valPrevio) select.value = valPrevio;
+  });
+
+  // 5. Activamos el evento del filtro principal
+  if (filtroSel) {
+      filtroSel.onchange = () => refreshAll();
   }
 
+  // 6. Dibujamos la lista con tachitos de basura en la configuración
   if (listaCat) {
       listaCat.innerHTML = "";
       categorias.forEach(cat => {
@@ -452,7 +473,7 @@ function renderProyeccion(ingresos, gastosFijos, gastosVariables, ahorros) {
             contenedorSaldos.innerHTML += `
             <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #444; padding: 5px 0;">
                 <span>🏦 ${b}:</span> 
-                <span style="font-weight: bold; color: #00aae4;">${formatoMoneda(saldos[b] || 0)}</span>
+                <span style="font-weight: bold; color: #00aae4;">${saldosOcultos ? "••••••" : formatoMoneda(saldos[b] || 0)}</span>
             </div>`;
         });
     }
@@ -474,22 +495,46 @@ async function refreshAll() {
   const mesSeleccionado = selector ? selector.value : new Date().toISOString().slice(0, 7);
   
   const gFiltradosMes = gTodos.filter(g => {
-
-        // prioridad: mesImpacto → vencimiento → fecha
         const fechaComparar = g.mesImpacto 
             ? g.mesImpacto 
             : (g.fechaVencimiento ? g.fechaVencimiento : g.fecha);
-
         return (fechaComparar || "").startsWith(mesSeleccionado);
   });
+
+  // --- MAGIA NUEVA: INYECTAR PRÉSTAMOS COMO GASTO FIJO VIRTUAL ---
+  // Agarramos los prestamos del mes y sumamos lo que haya (usamos variables del sistema, no importa el nombre que el usuario les haya puesto)
+  const prestamosDelMes = pTodos.filter(p => (p.mesCuota || "").startsWith(mesSeleccionado));
+  let sumaTotalPrestamos = 0;
+  prestamosDelMes.forEach(p => {
+      sumaTotalPrestamos += (Number(p.aporteMama) || 0) + (Number(p.aporteBelen) || 0);
+  });
+
+  if (sumaTotalPrestamos > 0) {
+      gFiltradosMes.push({
+          id: 'virtual_prestamo',
+          descripcion: `Cuota Préstamos`, // Usamos un nombre genérico
+          monto: sumaTotalPrestamos,
+          fechaVencimiento: mesSeleccionado + "-10", // Simulamos vencimiento
+          categoriaNombre: "🤝 Préstamos", // Agrupado para el gráfico
+          pagado: false,
+          medioPago: "MÚLTIPLES",
+          esFijo: true, // Esto hace que vaya a la tabla de Fijos
+          esVirtual: true // Oculta el tacho de basura
+      });
+  }
+  // ---------------------------------------------------------------
   
-  const iFiltradosMes = iTodos.filter(i => (i.fecha||"").startsWith(mesSeleccionado));
+  const iFiltradosMes = iTodos.filter(i => {
+          // Prioridad: mesImpacto → fecha de cobro
+          const fechaComparar = i.mesImpacto ? i.mesImpacto : i.fecha;
+          return (fechaComparar || "").startsWith(mesSeleccionado);
+    });
 
   const catFilter = document.getElementById("filtroCategoriaSelect") ? document.getElementById("filtroCategoriaSelect").value : "all";
   let gParaTablasYGrafico = [...gFiltradosMes]; 
   
   if (catFilter !== "all" && catFilter !== "") {
-      gParaTablasYGrafico = gFiltradosMes.filter(g => String(g.categoriaId) === String(catFilter));
+      gParaTablasYGrafico = gFiltradosMes.filter(g => String(g.categoriaId) === String(catFilter) || g.categoriaNombre === "🤝 Préstamos");
   }
 
   const inversiones = iTodos.filter(i => (i.descripcion || "").includes("INV:"));
@@ -504,9 +549,10 @@ async function refreshAll() {
   });
 
   const divUSD = document.querySelector("#ahorros .card:nth-child(1) .highlight");
-  const divARS = document.querySelector("#ahorros .card:nth-child(2) .highlight");
-  if(divUSD) divUSD.textContent = `USD ${totalUSD.toFixed(2)}`;
-  if(divARS) divARS.textContent = formatoMoneda(totalARS_Inv);
+    const divARS = document.querySelector("#ahorros .card:nth-child(2) .highlight");
+    // ACÁ LE CAMBIAMOS EL NOMBRE A LA VARIABLE DEL OJO
+    if(divUSD) divUSD.textContent = saldosAhorrosOcultos ? "••••••" : `USD ${totalUSD.toFixed(2)}`;
+    if(divARS) divARS.textContent = saldosAhorrosOcultos ? "••••••" : formatoMoneda(totalARS_Inv);
   
   const totalG = gFiltradosMes.reduce((s,x) => s + (Number(x.monto) || 0), 0);
   const totalI = ingresosNormales.reduce((s,x) => s + (Number(x.monto) || 0), 0);
@@ -522,15 +568,8 @@ async function refreshAll() {
   
   const gVariablesParaTabla = gParaTablasYGrafico.filter(g => !g.esFijo && !(g.descripcion && g.descripcion.includes("(Cuota")));
   const gFijosParaTabla = gParaTablasYGrafico.filter(g => g.esFijo); 
-  
-  renderGastosVariables(gVariablesParaTabla); 
-  renderGastosFijos(gFijosParaTabla); 
-  renderIngresos(ingresosNormales); 
-  generarGrafico(gParaTablasYGrafico);
-  renderConsumosCuotas(gParaTablasYGrafico); 
-  renderPrestamos(pTodos); 
 
-  // --- ACÁ EMPIEZA LA MAGIA DE INYECTAR LA PLATA EN LAS TARJETAS ---
+  // --- MAGIA DE TARJETAS (Cálculo) ---
   const baseMediosTC = ["BNA", "MERCADO PAGO", "EFECTIVO", "MERCADO_PAGO"];
   globalBilleteras.forEach(b => baseMediosTC.push(b.nombre.toUpperCase()));
 
@@ -543,14 +582,43 @@ async function refreshAll() {
       totalesTarjetas[m] = (totalesTarjetas[m] || 0) + monto;
   });
 
-  // Buscamos cada tarjeta en la pantalla y le mandamos su saldo adentro
-  globalTarjetas.forEach(t => {
-      const idMonto = "monto-tarjeta-" + t.id;
-      const total = totalesTarjetas[t.nombre] || 0;
-      const el = document.getElementById(idMonto);
-      if (el) el.textContent = formatoMoneda(total);
+  // Mostrar saldo adentro de las tarjetas de arriba (Y aplicar ojito NUEVO)
+    globalTarjetas.forEach(t => {
+        const idMonto = "monto-tarjeta-" + t.id;
+        const total = totalesTarjetas[t.nombre] || 0;
+        const el = document.getElementById(idMonto);
+        // ACÁ CAMBIAMOS LA VARIABLE:
+        if (el) el.textContent = saldosTarjetasOcultos ? "••••••" : formatoMoneda(total);
+    });
+
+  // --- MAGIA DE TARJETAS: INYECTAR TOTAL EN GASTOS FIJOS ---
+  let sumaTotalTarjetas = 0;
+  Object.values(totalesTarjetas).forEach(monto => {
+      sumaTotalTarjetas += (Number(monto) || 0);
   });
-  // ------------------------------------------------------------------
+
+  if (sumaTotalTarjetas > 0) {
+      gFijosParaTabla.push({
+          id: 'virtual_tarjeta', 
+          descripcion: `Resumen Total Tarjetas`,
+          monto: sumaTotalTarjetas,
+          fechaVencimiento: mesSeleccionado + "-10", 
+          categoriaNombre: "💳 Tarjetas", 
+          pagado: false,
+          medioPago: "MÚLTIPLES",
+          esVirtual: true 
+      });
+  }
+  // -------------------------------------------------------------------------
+
+  // AHORA SÍ DIBUJAMOS LAS TABLAS (Con las nuevas filas inyectadas)
+  renderGastosVariables(gVariablesParaTabla); 
+  renderGastosFijos(gFijosParaTabla); 
+  renderIngresos(ingresosNormales);
+  renderInversiones(inversiones);
+  generarGrafico(gParaTablasYGrafico);
+  renderConsumosCuotas(gParaTablasYGrafico); 
+  renderPrestamos(pTodos); 
 
   const gHistoricos = gTodos.filter(g => (g.fecha || "").startsWith(mesSeleccionado));
   const iHistoricos = iTodos.filter(i => (i.fecha || "").startsWith(mesSeleccionado));
@@ -600,10 +668,17 @@ function renderGastosFijos(lista) {
 
   lista.forEach(g => {
     total += (Number(g.monto) || 0);
-    const acciones = `
-        <button onclick="editarGasto(${g.id})" class="btn-edit" style="background: none; border: none; cursor: pointer; font-size: 1.1rem; margin-right: 5px;" title="Editar">✏️</button>
-        <button onclick="eliminarGasto(${g.id})" class="btn-delete" style="background: none; border: none; cursor: pointer; font-size: 1.1rem;" title="Eliminar">🗑️</button>
-    `;
+    
+    // Si es un resumen automático (tarjetas o préstamos), ocultamos el botón de borrar/editar
+    let acciones = "";
+    if (g.esVirtual) {
+        acciones = `<span style="font-size: 0.8rem; background: var(--bg-saldos); padding: 4px 8px; border-radius: 5px; color: #888;">Automático</span>`;
+    } else {
+        acciones = `
+            <button onclick="editarGasto(${g.id})" class="btn-edit" style="background: none; border: none; cursor: pointer; font-size: 1.1rem; margin-right: 5px;" title="Editar">✏️</button>
+            <button onclick="eliminarGasto(${g.id})" class="btn-delete" style="background: none; border: none; cursor: pointer; font-size: 1.1rem;" title="Eliminar">🗑️</button>
+        `;
+    }
 
     const vto = g.fechaVencimiento ? g.fechaVencimiento : "-";
     const estadoPagado = g.pagado ? "✅ Sí" : "❌ No";
@@ -613,7 +688,7 @@ function renderGastosFijos(lista) {
         <td>${g.descripcion||"-"}</td>
         <td style="font-weight: bold; color: #ffce56;">${formatoMoneda(g.monto)}</td>
         <td>${vto}</td>
-        <td>${g.categoriaNombre||"-"}</td>
+        <td><span style="${g.esVirtual ? 'color: #00aae4; font-weight: bold;' : ''}">${g.categoriaNombre||"-"}</span></td>
         <td>${estadoPagado}</td>
         <td>${fechaPagoReal}</td>
         <td>${g.medioPago||"EFECTIVO"}</td>
@@ -681,9 +756,14 @@ function renderConsumosCuotas(lista) {
 	);
     
     consumosTarjeta.forEach(g => {
-      const acciones = `<button onclick="eliminarGasto(${g.id})" class="btn-delete" style="padding: 2px 6px; margin-left: 10px; background: none; border: none; cursor: pointer; font-size: 1.1rem;" title="Eliminar">🗑️</button>`;
+      // 1. ACÁ AGREGAMOS EL LÁPIZ Y LA BASURA SEPARADOS
+      const acciones = `
+          <button onclick="editarCuotaTarjeta(${g.id})" class="btn-edit" style="padding: 2px 6px; background: none; border: none; cursor: pointer; font-size: 1.1rem;" title="Editar">✏️</button>
+          <button onclick="eliminarGasto(${g.id})" class="btn-delete" style="padding: 2px 6px; margin-left: 10px; background: none; border: none; cursor: pointer; font-size: 1.1rem;" title="Eliminar">🗑️</button>
+      `;
+      
       let desc = g.descripcion || "-";
-      let badgeCuota = "";
+      let badgeCuota = "-";
       
       if (desc.includes("(Cuota")) {
           const partes = desc.split("(Cuota");
@@ -694,17 +774,15 @@ function renderConsumosCuotas(lista) {
       
       let tarjetaBadge = `<span style="color: #00aae4; font-weight: bold; font-size: 0.8rem; display: block; margin-top: 4px;">${g.medioPago}</span>`;
       
+      // 2. ACÁ SEPARAMOS TODO EN 6 COLUMNAS PROLIJAS
       tbody.innerHTML += `
       <tr>
           <td>${g.fecha} ${tarjetaBadge}</td>
           <td>${desc}</td>
+          <td>${g.categoriaNombre || "-"}</td>
           <td>${badgeCuota}</td>
-          <td>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span>${formatoMoneda(g.monto)}</span>
-                  <span>${acciones}</span>
-              </div>
-          </td>
+          <td style="font-weight: bold;">${formatoMoneda(g.monto)}</td>
+          <td>${acciones}</td>
       </tr>`;
     });
 }
@@ -988,15 +1066,20 @@ const formIngreso = document.getElementById("formIngreso");
 if (formIngreso) {
     formIngreso.onsubmit = async (e) => { 
         e.preventDefault(); 
+        const btnSubmit = document.querySelector("#formIngreso button[type='submit']");
+        btnSubmit.disabled = true;
         try {
-            // INGRESOS USAN DTO Y REQUIEREN NUMEROS SUELTOS
+            // Capturamos el mes de impacto
+            const mesImpacto = document.getElementById("ingresoMesImpacto").value;
+
             const body = {
                 descripcion: document.getElementById("ingresoDescripcion").value || "Ingreso",
                 monto: document.getElementById("ingresoMonto").value,
                 medioPago: document.getElementById("ingresoMedio").value,
                 fecha: document.getElementById("ingresoFecha").value,
                 usuarioId: user.id,
-                categoriaId: document.getElementById("ingresoCategoria").value || null
+                categoriaId: document.getElementById("ingresoCategoria").value || null,
+                mesImpacto: mesImpacto ? mesImpacto + "-01" : null // Se lo mandamos a la base de datos
             };
             
             const res = await fetch(`${API}/ingresos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
@@ -1013,6 +1096,8 @@ if (formIngreso) {
             
         } catch(error) {
             alert("Error de conexión. Revisá tu internet y volvé a intentar.");
+        } finally {
+            btnSubmit.disabled = false;
         }
     };
 }
@@ -1028,48 +1113,41 @@ if (formTarjeta) {
             const montoTotal = parseFloat(document.getElementById("tarjetaMontoTotal").value);
             const cuotas = parseInt(document.getElementById("tarjetaCuotas").value);
             const primeraCuota = document.getElementById("tarjetaPrimeraCuota").value;
-			const diaCompra = parseInt(document.getElementById("tarjetaDia").value) || 10;            
-			const tarjetaTipo = document.getElementById("tarjetaTipo").value; 
-            
+            const diaCompra = parseInt(document.getElementById("tarjetaDia").value) || 10;            
+            const tarjetaTipo = document.getElementById("tarjetaTipo").value; 
+            const categoriaId = document.getElementById("tarjetaCategoria").value || null; // <--- CAPTURAMOS LA CATEGORÍA
+
             const montoPorCuota = Number((montoTotal / cuotas).toFixed(2));
             const [year, month] = primeraCuota.split('-');
             let fechaActual = new Date(year, month - 1, diaCompra);
 
-			for (let i = 1; i <= cuotas; i++) {
-			    const yyyy = fechaActual.getFullYear();
-			    const mm = String(fechaActual.getMonth() + 1).padStart(2, '0');
-			    const dd = String(fechaActual.getDate()).padStart(2, '0');
+            for (let i = 1; i <= cuotas; i++) {
+                const yyyy = fechaActual.getFullYear();
+                const mm = String(fechaActual.getMonth() + 1).padStart(2, '0');
+                const dd = String(fechaActual.getDate()).padStart(2, '0');
 
-			    const textoDesc = `${descripcion} (Cuota ${i}/${cuotas})`;
+                const body = {
+                    descripcion: `${descripcion} (Cuota ${i}/${cuotas})`,
+                    monto: montoPorCuota,
+                    medioPago: tarjetaTipo,
+                    fecha: `${yyyy}-${mm}-${dd}`,
+                    esFijo: false,
+                    usuarioId: user.id,
+                    pagado: false,
+                    categoriaId: categoriaId // <--- AHORA SÍ SE ENVÍA A JAVA
+                };
 
-			    const body = {
-			        descripcion: textoDesc,
-			        monto: montoPorCuota,
-			        medioPago: tarjetaTipo,
-			        fecha: `${yyyy}-${mm}-${dd}`,
-			        esFijo: false,
-			        usuarioId: user.id,
-			        pagado: false
-			    };
-
-			    await fetch(`${API}/gastos`, {
-			        method: "POST",
-			        headers: authHeaders(),
-			        body: JSON.stringify(body)
-			    });
-
-			    fechaActual.setMonth(fechaActual.getMonth() + 1);
-			}
+                await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
+                fechaActual.setMonth(fechaActual.getMonth() + 1);
+            }
 
             document.getElementById("modalTarjeta").style.display = "none";
             formTarjeta.reset();
             await refreshAll();
-            alert(cuotas === 1 ? "Compra en 1 pago guardada." : "Cuotas generadas con éxito.");
+            alert("Compra cargada con éxito.");
         } catch (error) { 
             alert("Error al guardar la compra."); 
-        } finally { 
-            btnSubmit.disabled = false; 
-        }
+        } finally { btnSubmit.disabled = false; }
     };
 }
 
@@ -1159,8 +1237,10 @@ window.eliminarGasto = async function(id) {
     await refreshAll(); 
 };
 
-// ¡ESTA ES LA FUNCIÓN QUE SE HABÍA BORRADO!
-window.editarGasto = function(id) {
+window.editarGasto = async function(id) {
+
+    await fetchCategorias();
+
     gastoEnEdicion = globalGastos.find(g => g.id === id);
     if (!gastoEnEdicion) return;
 
@@ -1169,20 +1249,24 @@ window.editarGasto = function(id) {
     document.getElementById("gastoMonto").value = gastoEnEdicion.monto;
     document.getElementById("gastoMedio").value = gastoEnEdicion.medioPago || "EFECTIVO";
     
-    const catId = gastoEnEdicion.categoria ? gastoEnEdicion.categoria.id : (gastoEnEdicion.categoriaId || "");
-    document.getElementById("gastoCategoria").value = catId;
+    const catId = gastoEnEdicion.categoriaId ?? gastoEnEdicion.categoria?.id ?? "";
+
+    setTimeout(() => {
+        const selectCat = document.getElementById("gastoCategoria");
+        if (selectCat) selectCat.value = catId;
+    }, 0);
     
     document.getElementById("gastoVencimiento").value = gastoEnEdicion.fechaVencimiento || gastoEnEdicion.fecha || "";
-	
-	if(gastoEnEdicion.mesImpacto){
-	    document.getElementById("gastoMesImpacto").value = gastoEnEdicion.mesImpacto.slice(0,7);
-	}else{
-	    document.getElementById("gastoMesImpacto").value = "";
-	}
-    
+
+    if(gastoEnEdicion.mesImpacto){
+        document.getElementById("gastoMesImpacto").value = gastoEnEdicion.mesImpacto.slice(0,7);
+    }else{
+        document.getElementById("gastoMesImpacto").value = "";
+    }
+
     const isPagado = gastoEnEdicion.pagado || false;
     document.getElementById("gastoPagado").checked = isPagado;
-    
+
     const divFechaPago = document.getElementById("divFechaPagoReal");
     if (isPagado) {
         divFechaPago.style.display = "block";
@@ -1201,7 +1285,6 @@ window.editarGasto = function(id) {
 
     document.getElementById("modalGasto").style.display = "flex";
 };
-
 window.eliminarIngreso = async function(id) { 
     if(confirm("¿Eliminar ingreso?")) { 
         await fetch(`${API}/ingresos/${id}`, { method: "DELETE", headers: authHeaders() }); 
@@ -1218,10 +1301,10 @@ window.crearCategoria = async function() {
     }
 
     try {
-        // CATEGORIAS USA EL OBJETO EN JAVA
+
         const body = { 
             nombre: inputCat.value.trim(),
-            usuario: { id: user.id }
+            usuarioId: user.id
         };
 
         const res = await fetch(`${API}/categorias`, { 
@@ -1359,16 +1442,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modalGasto').style.display = 'flex'; 
     };
     
-    const btnFabIngreso = document.getElementById('btnFabIngreso');
-    if (btnFabIngreso) btnFabIngreso.onclick = () => { 
-        document.getElementById('formIngreso').reset();
-        document.getElementById('ingresoId').value = "";
-        
-        const hoy = new Date().toISOString().split('T')[0];
-        document.getElementById('ingresoFecha').value = hoy;
+	const btnFabIngreso = document.getElementById('btnFabIngreso');
+	    if (btnFabIngreso) btnFabIngreso.onclick = () => { 
+	        document.getElementById('formIngreso').reset();
+	        document.getElementById('ingresoId').value = "";
+	        
+	        const hoy = new Date().toISOString().split('T')[0];
+	        document.getElementById('ingresoFecha').value = hoy;
+	        
+	        const mesImpactoInput = document.getElementById('ingresoMesImpacto');
+	        if (mesImpactoInput) mesImpactoInput.value = "";
 
-        document.getElementById('modalIngreso').style.display = 'flex'; 
-    };
+	        document.getElementById('modalIngreso').style.display = 'flex'; 
+	    };
     
     const btnFabTarjeta = document.getElementById('btnFabTarjeta');
     if (btnFabTarjeta) btnFabTarjeta.onclick = () => { 
@@ -1406,3 +1492,149 @@ if (logoutBtn) {
     cargarSelectorFechas(); 
     await refreshAll(); 
 })();
+
+//EDITAR CUOTA
+window.editarCuotaTarjeta = async function(id) {
+    // 1. Forzamos una actualización de categorías por si creaste una recién
+    await fetchCategorias(); 
+
+    const gasto = globalGastos.find(g => g.id === id);
+    if (!gasto) return;
+
+    // Llenamos los campos
+    document.getElementById("editCuotaId").value = gasto.id;
+    document.getElementById("editCuotaMedio").value = gasto.medioPago; 
+    document.getElementById("editCuotaFecha").value = gasto.fecha || "";
+    document.getElementById("editCuotaMonto").value = gasto.monto;
+
+    let desc = gasto.descripcion || "";
+    let cuotaStr = "";
+    if (desc.includes("(Cuota")) {
+        const partes = desc.split("(Cuota");
+        desc = partes[0].trim();
+        cuotaStr = partes[1].replace(")", "").trim(); 
+    }
+    document.getElementById("editCuotaDescripcion").value = desc;
+    document.getElementById("editCuotaInfo").value = cuotaStr;
+
+    // 2. Seleccionamos la categoría correcta
+    const eSelect = document.getElementById("editCuotaCategoria");
+    const catId = gasto.categoria ? gasto.categoria.id : (gasto.categoriaId || "");
+    if(eSelect) eSelect.value = catId;
+
+    document.getElementById("modalEditarCuota").style.display = "flex";
+};
+
+const formEditarCuota = document.getElementById("formEditarCuota");
+if (formEditarCuota) {
+    formEditarCuota.onsubmit = async (e) => {
+        e.preventDefault();
+        const btnSubmit = document.querySelector("#formEditarCuota button[type='submit']");
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = "Guardando...";
+
+        try {
+            const id = document.getElementById("editCuotaId").value;
+            const descBase = document.getElementById("editCuotaDescripcion").value.trim();
+            const cuotaInfo = document.getElementById("editCuotaInfo").value.trim();
+            const descripcionFinal = cuotaInfo ? `${descBase} (Cuota ${cuotaInfo})` : descBase;
+
+            const body = {
+                descripcion: descripcionFinal,
+                monto: parseFloat(document.getElementById("editCuotaMonto").value),
+                medioPago: document.getElementById("editCuotaMedio").value,
+                fecha: document.getElementById("editCuotaFecha").value,
+                categoriaId: document.getElementById("editCuotaCategoria").value || null,
+                usuarioId: user.id,
+                esFijo: false
+            };
+
+            const originalGasto = globalGastos.find(g => g.id == id);
+            if (originalGasto) {
+                body.pagado = originalGasto.pagado;
+                body.fechaVencimiento = originalGasto.fechaVencimiento;
+                body.mesImpacto = originalGasto.mesImpacto;
+            }
+
+            const res = await fetch(`${API}/gastos/${id}`, {
+                method: "PUT",
+                headers: authHeaders(),
+                body: JSON.stringify(body)
+            });
+
+            if (!res.ok) throw new Error("Error al actualizar la cuota");
+
+            document.getElementById("modalEditarCuota").style.display = "none";
+            await refreshAll();
+        } catch (error) {
+            alert("Error al guardar cambios");
+        } finally {
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = "Guardar Cambios";
+        }
+    };
+}
+
+function renderInversiones(lista) {
+  const tbody = document.querySelector('#tablaInversiones tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  
+  lista.forEach(i => {
+    // Como las guardamos como ingresos, usamos la misma función de borrar ingresos
+    const acciones = `<button onclick="eliminarIngreso(${i.id})" class="btn-delete" style="background: none; border: none; cursor: pointer; font-size: 1.1rem;" title="Eliminar">🗑️</button>`;
+    
+    // Le sacamos el texto "INV: " para que quede más prolijo en la tabla
+    let detalleLimpio = (i.descripcion || "").replace("INV: ", "");
+    
+    // Le damos color verde a los USD y gris a los ARS
+    let colorMonto = detalleLimpio.includes('(USD)') ? '#86efac' : '#94a3b8';
+    let prefijo = detalleLimpio.includes('(USD)') ? 'USD ' : '';
+
+    tbody.innerHTML += `<tr>
+        <td>${i.fecha}</td>
+        <td>${detalleLimpio}</td>
+        <td style="font-weight: bold; color: ${colorMonto};">${prefijo}${formatoMoneda(i.monto)}</td>
+        <td>${acciones}</td>
+    </tr>`;
+  });
+}
+
+window.toggleSaldos = function() {
+    saldosOcultos = !saldosOcultos; // Cambiamos el estado (si era true pasa a false y viceversa)
+    
+    // Cambiamos el icono
+    const icono = document.getElementById("iconoSaldos");
+    if(icono) {
+        icono.textContent = saldosOcultos ? "visibility_off" : "visibility";
+    }
+    
+    // Refrescamos los números
+    refreshAll();
+};
+
+window.toggleSaldosTarjetas = function() {
+    saldosTarjetasOcultos = !saldosTarjetasOcultos; // Cambiamos el estado
+    
+    // Cambiamos el icono del ojo de las tarjetas
+    const icono = document.getElementById("iconoSaldosTarjetas");
+    if(icono) {
+        icono.textContent = saldosTarjetasOcultos ? "visibility_off" : "visibility";
+    }
+    
+    // Refrescamos los números
+    refreshAll();
+};
+
+window.toggleSaldosAhorros = function() {
+    saldosAhorrosOcultos = !saldosAhorrosOcultos; // Cambiamos el estado
+    
+    // Cambiamos el icono
+    const icono = document.getElementById("iconoSaldosAhorros");
+    if(icono) {
+        icono.textContent = saldosAhorrosOcultos ? "visibility_off" : "visibility";
+    }
+    
+    // Refrescamos los números
+    refreshAll();
+};

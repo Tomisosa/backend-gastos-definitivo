@@ -8,12 +8,13 @@ public class IngresoResponse {
     private String descripcion;
     private Double monto;
     private LocalDate fecha;
-    
-    // CAMPOS QUE FALTABAN
     private String medioPago;
     private Long usuarioId;
     private Long categoriaId;
     private String categoriaNombre;
+    
+    // AGREGAMOS EL CAMPO ACÁ:
+    private String mesImpacto;
 
     // --- GETTERS Y SETTERS ---
     public Long getId() { return id; }
@@ -39,4 +40,8 @@ public class IngresoResponse {
 
     public String getCategoriaNombre() { return categoriaNombre; }
     public void setCategoriaNombre(String categoriaNombre) { this.categoriaNombre = categoriaNombre; }
+
+    // GETTER Y SETTER DE MES IMPACTO:
+    public String getMesImpacto() { return mesImpacto; }
+    public void setMesImpacto(String mesImpacto) { this.mesImpacto = mesImpacto; }
 }

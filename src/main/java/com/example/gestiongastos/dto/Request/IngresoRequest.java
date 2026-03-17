@@ -9,9 +9,10 @@ public class IngresoRequest {
     private LocalDate fecha;
     private Long usuarioId;
     private Long categoriaId;
-    
-    // AGREGA ESTO:
     private String medioPago;
+    
+    // AGREGAMOS EL CAMPO ACÁ:
+    private String mesImpacto;
 
     // Getters y Setters
     public String getDescripcion() { return descripcion; }
@@ -25,7 +26,10 @@ public class IngresoRequest {
     public Long getCategoriaId() { return categoriaId; }
     public void setCategoriaId(Long categoriaId) { this.categoriaId = categoriaId; }
     
-    // Y ESTOS DOS:
     public String getMedioPago() { return medioPago; }
     public void setMedioPago(String medioPago) { this.medioPago = medioPago; }
+
+    // GETTER Y SETTER DE MES IMPACTO:
+    public String getMesImpacto() { return mesImpacto; }
+    public void setMesImpacto(String mesImpacto) { this.mesImpacto = mesImpacto; }
 }
