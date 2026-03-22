@@ -14,4 +14,7 @@ public interface CategoriaService {
     CategoriaResponse getById(Long id);
 
     void delete(Long id);
+    
+    // ✅ NUEVO MÉTODO SOBRECARGADO
+    void delete(Long id, boolean force);
 }

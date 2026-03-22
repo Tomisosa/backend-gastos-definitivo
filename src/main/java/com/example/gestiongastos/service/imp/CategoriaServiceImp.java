@@ -8,8 +8,12 @@ import org.springframework.stereotype.Service;
 import com.example.gestiongastos.dto.Request.CategoriaRequest;
 import com.example.gestiongastos.dto.Response.CategoriaResponse;
 import com.example.gestiongastos.model.Categoria;
+import com.example.gestiongastos.model.Gasto;
+import com.example.gestiongastos.model.Ingreso;
 import com.example.gestiongastos.model.Usuario;
 import com.example.gestiongastos.repository.CategoriaRepository;
+import com.example.gestiongastos.repository.GastoRepository;
+import com.example.gestiongastos.repository.IngresoRepository;
 import com.example.gestiongastos.repository.UsuarioRepository;
 import com.example.gestiongastos.services.CategoriaService;
 
@@ -20,10 +24,17 @@ public class CategoriaServiceImp implements CategoriaService {
 
     private final CategoriaRepository categoriaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final GastoRepository gastoRepository;
+    private final IngresoRepository ingresoRepository;
 
-    public CategoriaServiceImp(CategoriaRepository categoriaRepository, UsuarioRepository usuarioRepository) {
+    public CategoriaServiceImp(CategoriaRepository categoriaRepository, 
+                              UsuarioRepository usuarioRepository,
+                              GastoRepository gastoRepository,
+                              IngresoRepository ingresoRepository) {
         this.categoriaRepository = categoriaRepository;
         this.usuarioRepository = usuarioRepository;
+        this.gastoRepository = gastoRepository;
+        this.ingresoRepository = ingresoRepository;
     }
 
     @Override
@@ -65,11 +76,37 @@ public class CategoriaServiceImp implements CategoriaService {
 
     @Override
     public void delete(Long id) {
+        delete(id, false);
+    }
 
-        if (!categoriaRepository.existsById(id)) {
-            throw new EntityNotFoundException("Categoría no encontrada para eliminar");
+    public void delete(Long id, boolean force) {
+
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Categoría no encontrada para eliminar"));
+
+        // Buscar gastos e ingresos asociados
+        List<Gasto> gastos = gastoRepository.findByCategoriaId(id);
+        List<Ingreso> ingresos = ingresoRepository.findByCategoriaId(id);
+
+        boolean tieneMovimientos = (gastos != null && !gastos.isEmpty()) || 
+                                   (ingresos != null && !ingresos.isEmpty());
+
+        // Si tiene movimientos y no es forzado, lanzar excepción (403)
+        if (tieneMovimientos && !force) {
+            throw new IllegalArgumentException("Esta categoría tiene movimientos asociados");
         }
 
+        // Si es forzado, eliminar los movimientos primero
+        if (force && tieneMovimientos) {
+            if (gastos != null && !gastos.isEmpty()) {
+                gastoRepository.deleteAll(gastos);
+            }
+            if (ingresos != null && !ingresos.isEmpty()) {
+                ingresoRepository.deleteAll(ingresos);
+            }
+        }
+
+        // Finalmente eliminar la categoría
         categoriaRepository.deleteById(id);
     }
 

@@ -595,3 +595,27 @@ select:focus, #filtroFechaMes:focus {
     background-color: var(--bg-panel); /* Que tenga el mismo color que el panel de atrás */
     box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
 }
+
+/* --- ARREGLO CABECERA DE TABLA --- */
+.table-wrapper {
+    position: relative;
+}
+
+.table th {
+    position: sticky;
+    top: 0;
+    background-color: #ffffff !important; /* Fondo blanco para que combine con tus tablas */
+    color: #333333 !important; /* Forzamos las letras oscuras para que se lean perfecto */
+    z-index: 100 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Sombra súper suave y elegante */
+}
+
+/* Para asegurarnos de que las esquinas no dejen "huecos" transparentes */
+.table th::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    border-bottom: 1px solid #e2e8f0; /* Borde clarito a juego */
+}

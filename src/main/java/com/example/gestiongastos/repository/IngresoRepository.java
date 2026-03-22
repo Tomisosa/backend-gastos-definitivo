@@ -7,5 +7,9 @@ import com.example.gestiongastos.model.Usuario;
 import java.util.List;
 
 public interface IngresoRepository extends JpaRepository<Ingreso, Long> {
+    
     List<Ingreso> findByUsuarioOrderByFechaDesc(Usuario usuario);
+    
+    // ✅ NUEVO MÉTODO
+    List<Ingreso> findByCategoriaId(Long categoriaId);
 }

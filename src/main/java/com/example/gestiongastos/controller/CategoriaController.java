@@ -33,8 +33,8 @@ public class CategoriaController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        categoriaService.delete(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id, @RequestParam(required = false, defaultValue = "false") boolean force) {
+        categoriaService.delete(id, force);
         return ResponseEntity.noContent().build();
     }
 }
