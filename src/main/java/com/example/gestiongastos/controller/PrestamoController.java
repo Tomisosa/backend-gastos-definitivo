@@ -33,6 +33,21 @@ public class PrestamoController {
         return ResponseEntity.ok(guardado);
     }
 
+    // --- NUEVO MÉTODO PARA EDITAR LA CUOTA MES A MES ---
+    @PutMapping("/{id}")
+    public ResponseEntity<?> actualizarPrestamo(@PathVariable Long id, @RequestBody Prestamo detalles) {
+        Prestamo prestamo = prestamoRepository.findById(id).orElse(null);
+        if (prestamo == null) return ResponseEntity.notFound().build();
+
+        // Solo le actualizamos la plata, los otros datos (cuota 1 de 36, nombre) quedan intactos
+        prestamo.setMontoTotal(detalles.getMontoTotal());
+        prestamo.setAporteBelen(detalles.getAporteBelen());
+        prestamo.setAporteOtro(detalles.getAporteOtro());
+
+        Prestamo actualizado = prestamoRepository.save(prestamo);
+        return ResponseEntity.ok(actualizado);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminarPrestamo(@PathVariable Long id) {
         prestamoRepository.deleteById(id);

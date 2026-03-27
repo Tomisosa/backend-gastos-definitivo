@@ -337,6 +337,7 @@ function actualizarMediosDePagoSelects() {
     const ingresoMedio = document.getElementById("ingresoMedio");
     const tarjetaTipo = document.getElementById("tarjetaTipo"); 
     const pagoGastoMedio = document.getElementById("pagoGastoMedio"); 
+    const filtroTarjeta = document.getElementById("filtroTarjetaSelect"); // <--- EL NUEVO FILTRO
     
     let opcionesBilleteras = `<option value="BNA">🏦 BNA</option><option value="MERCADO PAGO">📱 Mercado Pago</option><option value="EFECTIVO">💵 Efectivo</option>`;
     globalBilleteras.forEach(b => {
@@ -350,6 +351,16 @@ function actualizarMediosDePagoSelects() {
     if (tarjetaTipo) tarjetaTipo.innerHTML = "";
     if (globalTarjetas.length === 0 && tarjetaTipo) {
         tarjetaTipo.innerHTML = '<option value="">No tenés tarjetas de crédito creadas</option>';
+    }
+
+    // MAGIA: Llenamos el filtro con las tarjetas que ella haya creado
+    if (filtroTarjeta) {
+        const valPrevio = filtroTarjeta.value;
+        filtroTarjeta.innerHTML = '<option value="all">💳 TODAS</option>';
+        globalTarjetas.forEach(t => {
+            filtroTarjeta.innerHTML += `<option value="${t.nombre.toUpperCase()}">💳 ${t.nombre.toUpperCase()}</option>`;
+        });
+        if (valPrevio) filtroTarjeta.value = valPrevio; // Mantiene lo que estaba seleccionado
     }
 
     globalTarjetas.forEach(t => {
@@ -437,21 +448,50 @@ function renderProyeccion(ingresos, gastosFijos, gastosVariables, ahorros) {
 }
 
 async function refreshAll() {
-  await fetchCategorias(); 
   if(!user) return; 
-  
   cargarNombresPrestamo(); 
-  globalBilleteras = await fetchBilleteras();
-  await fetchYRenderizarMisTarjetas();
-  
-  const gTodos = await fetchGastos(); 
-  const iTodos = await fetchIngresos();
-  const pTodos = await fetchPrestamos(); 
+
+  // 🚀 MAGIA DE VELOCIDAD: Pedimos TODO a la base de datos al mismo tiempo
+  const [categorias, billeteras, tarjetas, gTodos, iTodos, pTodos] = await Promise.all([
+      fetchCategorias(),
+      fetchBilleteras(),
+      fetchYRenderizarMisTarjetas(),
+      fetchGastos(),
+      fetchIngresos(),
+      fetchPrestamos()
+  ]);
+
+  globalBilleteras = billeteras || [];
   
   const selector = document.getElementById("filtroFechaMes");
-  const mesSeleccionado = selector ? selector.value : new Date().toISOString().slice(0, 7);
-  
-  const gFiltradosMes = gTodos.filter(g => {
+    const mesSeleccionado = selector ? selector.value : new Date().toISOString().slice(0, 7);
+
+    // --- MAGIA: LEER FECHAS DESDE LA BD ---
+    let textoVencimientoTarjetas = "Según tarjeta"; // Por defecto
+    const configMensual = iTodos.find(i => (i.descripcion || "").includes(`[CONFIG_TC] ${mesSeleccionado}`));
+    
+    if (configMensual) {
+        const partes = configMensual.descripcion.split("|");
+        const cCierre = partes[1] ? partes[1].split(":")[1].trim() : "";
+        const cVto = partes[2] ? partes[2].split(":")[1].trim() : "";
+        
+        const fc = document.getElementById("fechaCierreMes");
+        const fv = document.getElementById("fechaVtoMes");
+        if(fc) fc.value = cCierre !== "undefined" ? cCierre : "";
+        if(fv) fv.value = cVto !== "undefined" ? cVto : "";
+        
+        if (cVto && cVto !== "undefined" && cVto !== "") {
+            textoVencimientoTarjetas = cVto; 
+        }
+    } else {
+        const fc = document.getElementById("fechaCierreMes");
+        const fv = document.getElementById("fechaVtoMes");
+        if(fc) fc.value = "";
+        if(fv) fv.value = "";
+    }
+    // --------------------------------------
+    
+    const gFiltradosMes = gTodos.filter(g => {
         const fechaComparar = g.mesImpacto ? g.mesImpacto : (g.fechaVencimiento ? g.fechaVencimiento : g.fecha);
         return (fechaComparar || "").startsWith(mesSeleccionado);
   });
@@ -489,7 +529,7 @@ async function refreshAll() {
   }
 
   const inversiones = iTodos.filter(i => (i.descripcion || "").includes("INV:"));
-  const ingresosNormales = iFiltradosMes.filter(i => !(i.descripcion || "").includes("INV:"));
+  const ingresosNormales = iFiltradosMes.filter(i => !(i.descripcion || "").includes("INV:") && !(i.descripcion || "").includes("[CONFIG_TC]"));
 
   let totalUSD = 0;
   let totalARS_Inv = 0;
@@ -519,59 +559,92 @@ async function refreshAll() {
   const gVariablesParaTabla = gParaTablasYGrafico.filter(g => !g.esFijo && !(g.descripcion && g.descripcion.includes("(Cuota")));
   const gFijosParaTabla = gParaTablasYGrafico.filter(g => g.esFijo); 
 
-  const baseMediosTC = ["BNA", "MERCADO PAGO", "EFECTIVO", "MERCADO_PAGO"];
+  const baseMediosTC = ["BNA", "MERCADO PAGO", "EFECTIVO", "MERCADO_PAGO", "PENDIENTE", "MÚLTIPLES"];
   globalBilleteras.forEach(b => baseMediosTC.push(b.nombre.toUpperCase()));
 
   const consumosTarjeta = gParaTablasYGrafico.filter(g => !baseMediosTC.includes((g.medioPago||"").toUpperCase()));
   
-  const totalesTarjetas = {};
-  consumosTarjeta.forEach(g => {
-      const m = g.medioPago || "Tarjeta Desconocida";
-      const monto = Number(g.monto) || 0;
-      totalesTarjetas[m] = (totalesTarjetas[m] || 0) + monto;
-  });
+  const totalesTarjetasARS = {};
+    const totalesTarjetasUSD = {};
+    let sumaTotalTarjetasARS = 0;
+    let sumaTotalTarjetasUSD = 0;
 
-  globalTarjetas.forEach(t => {
-      const idMonto = "monto-tarjeta-" + t.id;
-      const total = totalesTarjetas[t.nombre] || 0;
-      const el = document.getElementById(idMonto);
-      if (el) el.textContent = saldosTarjetasOcultos ? "••••••" : formatoMoneda(total);
-  });
+    consumosTarjeta.forEach(g => {
+        const m = g.medioPago || "Tarjeta Desconocida";
+        const monto = Number(g.monto) || 0;
+        if ((g.descripcion || "").includes("[USD]")) {
+            totalesTarjetasUSD[m] = (totalesTarjetasUSD[m] || 0) + monto;
+            sumaTotalTarjetasUSD += monto;
+        } else {
+            totalesTarjetasARS[m] = (totalesTarjetasARS[m] || 0) + monto;
+            sumaTotalTarjetasARS += monto;
+        }
+    });
 
-  let sumaTotalTarjetas = 0;
-  Object.values(totalesTarjetas).forEach(monto => {
-      sumaTotalTarjetas += (Number(monto) || 0);
-  });
+    globalTarjetas.forEach(t => {
+        const idMonto = "monto-tarjeta-" + t.id;
+        const totalARS = totalesTarjetasARS[t.nombre] || 0;
+        const totalUSD = totalesTarjetasUSD[t.nombre] || 0;
+        const el = document.getElementById(idMonto);
+        if (el) {
+            if (saldosTarjetasOcultos) {
+                el.innerHTML = "••••••";
+            } else {
+                let textoHTML = formatoMoneda(totalARS);
+                if (totalUSD > 0) {
+                    textoHTML += `<br><span style="font-size: 1.1rem; color: #86efac;">USD ${totalUSD.toFixed(2)}</span>`;
+                }
+                el.innerHTML = textoHTML;
+            }
+        }
+    });
 
-  if (sumaTotalTarjetas > 0) {
-      gFijosParaTabla.push({
-          id: 'virtual_tarjeta', 
-          descripcion: `Resumen Total Tarjetas`,
-          monto: sumaTotalTarjetas,
-          fechaVencimiento: mesSeleccionado + "-10", 
-          categoriaNombre: "💳 Tarjetas", 
-          pagado: false,
-          medioPago: "MÚLTIPLES",
-          esVirtual: true 
-      });
+	if (sumaTotalTarjetasARS > 0) {
+		        gFijosParaTabla.push({
+		            id: 'virtual_tarjeta_ars', 
+		            descripcion: `Resumen Tarjetas (Pesos)`,
+		            monto: sumaTotalTarjetasARS,
+		            fechaVencimiento: textoVencimientoTarjetas, 
+		            categoriaNombre: "💳 Tarjetas", 
+		            pagado: false,
+		            medioPago: "MÚLTIPLES",
+		            esVirtual: true 
+		        });
+		    }
+
+		    if (sumaTotalTarjetasUSD > 0) {
+		        gFijosParaTabla.push({
+		            id: 'virtual_tarjeta_usd', 
+		            descripcion: `Resumen Tarjetas (Dólares)`,
+		            monto: sumaTotalTarjetasUSD,
+		            fechaVencimiento: textoVencimientoTarjetas, 
+		            categoriaNombre: "💳 Tarjetas", 
+		            pagado: false,
+		            medioPago: "MÚLTIPLES",
+		            esVirtual: true,
+		            isUSD: true 
+		        });
+		    }
+
+    renderGastosVariables(gVariablesParaTabla); 
+    renderGastosFijos(gFijosParaTabla); 
+    renderIngresos(ingresosNormales);
+    renderInversiones(inversiones);
+    generarGrafico(gParaTablasYGrafico);
+    renderConsumosCuotas(gParaTablasYGrafico); 
+    renderPrestamos(pTodos); 
+
+	const gHistoricos = gTodos.filter(g => (g.fecha || "").startsWith(mesSeleccionado));
+	const iHistoricos = iTodos.filter(i => (i.fecha || "").startsWith(mesSeleccionado));
+
+	  // ¡MAGIA ACÁ! Filtramos las inversiones para que no se sumen como plata disponible
+	const ingresosParaSaldos = iHistoricos.filter(i => !(i.descripcion || "").includes("INV:") && !(i.descripcion || "").includes("[CONFIG_TC]"));
+
+	  calcularSaldosPorCuenta(gHistoricos, ingresosParaSaldos);
+    
+    actualizarMediosDePagoSelects();
+    renderProyeccion(ingresosNormales, gFijosParaTabla, gVariablesParaTabla, inversiones);
   }
-
-  renderGastosVariables(gVariablesParaTabla); 
-  renderGastosFijos(gFijosParaTabla); 
-  renderIngresos(ingresosNormales);
-  renderInversiones(inversiones);
-  generarGrafico(gParaTablasYGrafico);
-  renderConsumosCuotas(gParaTablasYGrafico); 
-  renderPrestamos(pTodos); 
-
-  const gHistoricos = gTodos.filter(g => (g.fecha || "").startsWith(mesSeleccionado));
-  const iHistoricos = iTodos.filter(i => (i.fecha || "").startsWith(mesSeleccionado));
-
-  calcularSaldosPorCuenta(gHistoricos, iHistoricos);
-  
-  actualizarMediosDePagoSelects();
-  renderProyeccion(ingresosNormales, gFijosParaTabla, gVariablesParaTabla, inversiones);
-}
 
 function renderPrestamos(prestamos) {
     const tbody = document.querySelector("#tablaPrestamos tbody");
@@ -641,10 +714,14 @@ function renderGastosFijos(lista) {
     }
 
     const vto = g.fechaVencimiento ? g.fechaVencimiento : "-";
+    
+    // MAGIA: Si es un gasto en USD, lo pintamos de verde claro y le ponemos "USD"
+    let esDolar = g.isUSD || (g.descripcion && g.descripcion.includes("[USD]"));
+    let textoMonto = esDolar ? `<span style="color:#86efac;">USD ${Number(g.monto).toFixed(2)}</span>` : formatoMoneda(g.monto);
 
     tbody.innerHTML += `<tr>
         <td>${g.descripcion||"-"}</td>
-        <td style="font-weight: bold; color: #ffce56;">${formatoMoneda(g.monto)}</td>
+        <td style="font-weight: bold; color: #ffce56;">${textoMonto}</td>
         <td>${vto}</td>
         <td><span style="${g.esVirtual ? 'color: #00aae4; font-weight: bold;' : ''}">${g.categoriaNombre||"-"}</span></td>
         <td>${estadoPagado}</td>
@@ -721,10 +798,25 @@ function renderConsumosCuotas(lista) {
     if (!tbody) return;
     tbody.innerHTML = "";
     
-	const consumosTarjeta = lista.filter(g => 
-	    g.medioPago && 
-	    !["BNA","MERCADO PAGO","MERCADO_PAGO","EFECTIVO"].includes(g.medioPago.toUpperCase())
-	);
+    const mediosIgnorados = ["BNA", "MERCADO PAGO", "MERCADO_PAGO", "EFECTIVO", "PENDIENTE", "MÚLTIPLES"];
+    globalBilleteras.forEach(b => mediosIgnorados.push(b.nombre.toUpperCase()));
+    
+    // ¡ACÁ LEEMOS QUÉ TARJETA ELIGIÓ TU HERMANA!
+    const filtroSelect = document.getElementById("filtroTarjetaSelect");
+    const tarjetaSeleccionada = filtroSelect ? filtroSelect.value : "all";
+
+    const consumosTarjeta = lista.filter(g => {
+        if (!g.medioPago) return false;
+        const medio = g.medioPago.toUpperCase();
+        
+        // 1. Descartar si no es tarjeta (billeteras, efectivo, etc)
+        if (mediosIgnorados.includes(medio)) return false;
+
+        // 2. Si eligió una tarjeta específica en el filtro, descartamos las demás
+        if (tarjetaSeleccionada !== "all" && medio !== tarjetaSeleccionada) return false;
+
+        return true;
+    });
     
     consumosTarjeta.forEach(g => {
       const acciones = `
@@ -744,8 +836,8 @@ function renderConsumosCuotas(lista) {
       
       let tarjetaBadge = `<span style="color: #00aae4; font-weight: bold; font-size: 0.8rem; display: block; margin-top: 4px;">${g.medioPago}</span>`;
       
-      // Le devolvemos el número visible siempre:
-      let montoAMostrar = formatoMoneda(g.monto);
+      let esDolar = (g.descripcion || "").includes("[USD]");
+      let montoAMostrar = esDolar ? `<span style="color:#86efac;">USD ${Number(g.monto).toFixed(2)}</span>` : formatoMoneda(g.monto);
       
       tbody.innerHTML += `
       <tr>
@@ -877,9 +969,14 @@ const medioPago = pagado ? document.getElementById("gastoMedio").value : "PENDIE
 const esFijo = document.getElementById("gastoEsFijo").checked;
 const repeticion = parseInt(document.getElementById("gastoRepeticion").value || 0);
 const categoriaId = document.getElementById("gastoCategoria").value || null;
-const fechaVto = document.getElementById("gastoVencimiento").value;
+let fechaVto = document.getElementById("gastoVencimiento").value;
 const fechaReal = document.getElementById("gastoFecha").value;
 const mesImpacto = document.getElementById("gastoMesImpacto").value;
+
+// MAGIA: Si dejó vacío el vencimiento, usamos la fecha en la que lo pagó (o la de hoy)
+if (!fechaVto) {
+    fechaVto = fechaReal ? fechaReal : new Date().toISOString().split('T')[0];
+}
 
 let fechaBase = pagado ? fechaReal : fechaVto;
 
@@ -897,35 +994,44 @@ if (idAEditar) {
     alert("¡Gasto actualizado!");
 
 } else {
-    if (esFijo && repeticion > 0) {
-        const [year, month, day] = fechaVto.split('-');
-        let saltoMes = 1;
-        const tipoRepeticion = document.getElementById("tipoRepeticion").value;
+	if (esFijo && repeticion > 0) {
+	        const [year, month, day] = fechaVto.split('-');
+	        let saltoMes = 1;
+	        const tipoRepeticion = document.getElementById("tipoRepeticion").value;
 
-        if(tipoRepeticion === "mensual") saltoMes = 1;
-        if(tipoRepeticion === "3meses") saltoMes = 3;
-        if(tipoRepeticion === "6meses") saltoMes = 6;
+	        if(tipoRepeticion === "mensual") saltoMes = 1;
+	        if(tipoRepeticion === "3meses") saltoMes = 3;
+	        if(tipoRepeticion === "6meses") saltoMes = 6;
 
-        for (let i = 0; i < repeticion; i++) {
-            let m = parseInt(month) + (i * saltoMes);
-            let y = parseInt(year);
-            while (m > 12) { m -= 12; y += 1; }
-            let safeDay = parseInt(day) > 28 ? "28" : day;
-            let nuevoVto = `${y}-${String(m).padStart(2,'0')}-${safeDay}`;
-            let isPagado = (i === 0) ? pagado : false;
-            let pFecha = (i === 0 && pagado) ? fechaReal : nuevoVto;
-            
-            // Si es repetición a futuro, obviamente es PENDIENTE
-            let mPago = isPagado ? medioPago : "PENDIENTE";
+	        for (let i = 0; i < repeticion; i++) {
+	            let m = parseInt(month) + (i * saltoMes);
+	            let y = parseInt(year);
+	            while (m > 12) { m -= 12; y += 1; }
+	            let safeDay = parseInt(day) > 28 ? "28" : day;
+	            let nuevoVto = `${y}-${String(m).padStart(2,'0')}-${safeDay}`;
+	            let isPagado = (i === 0) ? pagado : false;
+	            let pFecha = (i === 0 && pagado) ? fechaReal : nuevoVto;
+	            
+	            let mPago = isPagado ? medioPago : "PENDIENTE";
 
-            const bodyFijo = {
-            descripcion, monto, medioPago: mPago, fecha: pFecha,
-            esFijo: true, usuarioId: user.id, categoriaId: categoriaId,
-            fechaVencimiento: nuevoVto, pagado: isPagado, mesImpacto: mesImpacto ? mesImpacto + "-01" : null
-            };
-            await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(bodyFijo) });
-        }
-    } else {
+	            // ¡MAGIA ACÁ! Hacemos que el "Mes de Impacto" también avance correctamente
+	            let nuevoMesImpacto = null;
+	            if (mesImpacto) {
+	                let [mY, mM] = mesImpacto.split('-');
+	                let impM = parseInt(mM) + (i * saltoMes);
+	                let impY = parseInt(mY);
+	                while (impM > 12) { impM -= 12; impY += 1; }
+	                nuevoMesImpacto = `${impY}-${String(impM).padStart(2,'0')}-01`;
+	            }
+
+	            const bodyFijo = {
+	            descripcion, monto, medioPago: mPago, fecha: pFecha,
+	            esFijo: true, usuarioId: user.id, categoriaId: categoriaId,
+	            fechaVencimiento: nuevoVto, pagado: isPagado, mesImpacto: nuevoMesImpacto
+	            };
+	            await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(bodyFijo) });
+	        }
+	    }else {
         const body = {
         descripcion, monto, medioPago, fecha: fechaBase,
         esFijo, usuarioId: user.id, categoriaId: categoriaId,
@@ -998,25 +1104,32 @@ if (formTarjeta) {
         const btnSubmit = document.querySelector("#formTarjeta button[type='submit']");
         btnSubmit.disabled = true;
         try {
-            const descripcion = document.getElementById("tarjetaDescripcion").value;
+            const descripcionBase = document.getElementById("tarjetaDescripcion").value;
+            const moneda = document.getElementById("tarjetaMoneda").value;
             const montoTotal = parseFloat(document.getElementById("tarjetaMontoTotal").value);
             const cuotas = parseInt(document.getElementById("tarjetaCuotas").value);
             const primeraCuota = document.getElementById("tarjetaPrimeraCuota").value;
-            const diaCompra = parseInt(document.getElementById("tarjetaDia").value) || 10;            
+            const fechaExacta = document.getElementById("tarjetaFechaExacta").value; // ¡Acá tomamos la fecha del calendario!
             const tarjetaTipo = document.getElementById("tarjetaTipo").value; 
             const categoriaId = document.getElementById("tarjetaCategoria").value || null; 
 
+            // Si es USD, le agregamos la etiqueta a la descripción para reconocerlo visualmente
+            const descFinal = moneda === "USD" ? `[USD] ${descripcionBase}` : descripcionBase;
             const montoPorCuota = Number((montoTotal / cuotas).toFixed(2));
+            
+            // Usamos el mes de la "1° cuota" para calcular hacia adelante
             const [year, month] = primeraCuota.split('-');
-            let fechaActual = new Date(year, month - 1, diaCompra);
+            const diaCompraOriginal = parseInt(fechaExacta.split('-')[2]); 
+            
+            let fechaActualCalculo = new Date(year, month - 1, diaCompraOriginal);
 
             for (let i = 1; i <= cuotas; i++) {
-                const yyyy = fechaActual.getFullYear();
-                const mm = String(fechaActual.getMonth() + 1).padStart(2, '0');
-                const dd = String(fechaActual.getDate()).padStart(2, '0');
+                const yyyy = fechaActualCalculo.getFullYear();
+                const mm = String(fechaActualCalculo.getMonth() + 1).padStart(2, '0');
+                const dd = String(fechaActualCalculo.getDate()).padStart(2, '0');
 
                 const body = {
-                    descripcion: `${descripcion} (Cuota ${i}/${cuotas})`,
+                    descripcion: `${descFinal} (Cuota ${i}/${cuotas})`,
                     monto: montoPorCuota,
                     medioPago: tarjetaTipo,
                     fecha: `${yyyy}-${mm}-${dd}`,
@@ -1027,7 +1140,7 @@ if (formTarjeta) {
                 };
 
                 await fetch(`${API}/gastos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
-                fechaActual.setMonth(fechaActual.getMonth() + 1);
+                fechaActualCalculo.setMonth(fechaActualCalculo.getMonth() + 1);
             }
 
             document.getElementById("modalTarjeta").style.display = "none";
@@ -1224,14 +1337,14 @@ window.editarGasto = async function(id) {
         document.getElementById("gastoFecha").value = "";
     }
 
-    const chkFijo = document.getElementById("gastoEsFijo");
-    if (chkFijo) {
-        chkFijo.checked = gastoEnEdicion.esFijo;
-        const camposFijos = document.getElementById('camposFijos');
-        if (camposFijos) camposFijos.style.display = gastoEnEdicion.esFijo ? 'block' : 'none';
-    }
+	const chkFijo = document.getElementById("gastoEsFijo");
+	    if (chkFijo) {
+	        chkFijo.checked = gastoEnEdicion.esFijo;
+	        const camposFijos = document.getElementById('camposFijos');
+	        if (camposFijos) camposFijos.style.display = gastoEnEdicion.esFijo ? 'block' : 'none';
+	    }
 
-    document.getElementById("modalGasto").style.display = "flex";
+	    document.getElementById("modalGasto").style.display = "flex";
 };
 
 window.eliminarIngreso = async function(id) { 
@@ -1376,20 +1489,20 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    const btnFabGasto = document.getElementById('btnFabGasto');
-    if (btnFabGasto) btnFabGasto.onclick = () => { 
-        document.getElementById('formGasto').reset(); 
-        document.getElementById('gastoId').value = ""; 
-        gastoEnEdicion = null; 
-        
-        const hoy = new Date().toISOString().split('T')[0];
-        document.getElementById('gastoVencimiento').value = hoy;
-        
-        if(chkPagado) chkPagado.checked = false;
-        if(divFechaPagoReal) divFechaPagoReal.style.display = 'none';
+	const btnFabGasto = document.getElementById('btnFabGasto');
+	    if (btnFabGasto) btnFabGasto.onclick = () => { 
+	        document.getElementById('formGasto').reset(); 
+	        document.getElementById('gastoId').value = ""; 
+	        gastoEnEdicion = null; 
+	        
+	        const hoy = new Date().toISOString().split('T')[0];
+	        document.getElementById('gastoVencimiento').value = hoy;
+	        
+	        if(chkPagado) chkPagado.checked = false;
+	        if(divFechaPagoReal) divFechaPagoReal.style.display = 'none';
 
-        document.getElementById('modalGasto').style.display = 'flex'; 
-    };
+	        document.getElementById('modalGasto').style.display = 'flex';
+	    };
     
 	const btnFabIngreso = document.getElementById('btnFabIngreso');
 	    if (btnFabIngreso) btnFabIngreso.onclick = () => { 
@@ -1418,13 +1531,18 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.onclick = () => { btn.closest('.modal').style.display = 'none'; };
     });
 
-    const chkFijo = document.getElementById('gastoEsFijo');
-    const camposFijos = document.getElementById('camposFijos');
-    if (chkFijo && camposFijos) {
-        chkFijo.onchange = (e) => {
-            camposFijos.style.display = e.target.checked ? 'block' : 'none';
-        };
-    }
+	const chkFijo = document.getElementById('gastoEsFijo');
+	    const camposFijos = document.getElementById('camposFijos');
+	    const labelText = document.getElementById('labelTextGasto');
+
+	    if (chkFijo && camposFijos) {
+	        chkFijo.onchange = (e) => {
+	            camposFijos.style.display = e.target.checked ? 'block' : 'none';
+	            if (labelText) {
+	                labelText.textContent = e.target.checked ? "📅 Fecha de Vencimiento" : "📅 Fecha del Gasto (Dejalo vacío si ya lo pagaste)";
+	            }
+	        };
+	    }
 });
 
 const logoutBtn = document.getElementById("logoutBtn");
@@ -1564,4 +1682,37 @@ window.toggleSaldosAhorros = function() {
     const icono = document.getElementById("iconoSaldosAhorros");
     if(icono) icono.textContent = saldosAhorrosOcultos ? "visibility_off" : "visibility";
     refreshAll();
+};
+
+// --- GUARDAR FECHAS DE TARJETAS EN LA BASE DE DATOS (FANTASMA) ---
+window.guardarFechasTarjetas = async function() {
+    const selector = document.getElementById("filtroFechaMes");
+    const mesSeleccionado = selector ? selector.value : new Date().toISOString().slice(0, 7);
+    const cierre = document.getElementById("fechaCierreMes") ? document.getElementById("fechaCierreMes").value : "";
+    const vto = document.getElementById("fechaVtoMes") ? document.getElementById("fechaVtoMes").value : "";
+    
+    // Armamos el texto secreto que va a ir a la base de datos
+    const descString = `[CONFIG_TC] ${mesSeleccionado} | C:${cierre} | V:${vto}`;
+
+    try {
+        const iTodos = await fetchIngresos();
+        const existentes = iTodos.filter(i => (i.descripcion || "").includes(`[CONFIG_TC] ${mesSeleccionado}`));
+        for (let i of existentes) {
+            await fetch(`${API}/ingresos/${i.id}`, { method: "DELETE", headers: authHeaders() });
+        }
+
+        const body = {
+            descripcion: descString,
+            monto: 0,
+            medioPago: "EFECTIVO",
+            fecha: `${mesSeleccionado}-01`,
+            usuarioId: user.id
+        };
+        await fetch(`${API}/ingresos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
+        
+        alert("¡Fechas guardadas!");
+        await refreshAll();
+    } catch(err) {
+        alert("Error al guardar en la base de datos.");
+    }
 };

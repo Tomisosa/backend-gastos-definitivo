@@ -186,8 +186,32 @@
 				    </div>
 				    <button onclick="document.getElementById('modalNuevaTarjeta').style.display = 'flex'" style="background: var(--color-secundario); border: none; color: #000; font-weight: bold; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 0.9rem; white-space: nowrap; height: fit-content;">💳 + Nueva</button>
 				</div>
+				<div style="background: transparent; padding: 12px 0; margin-bottom: 25px; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+				    
+				    <div style="display: flex; align-items: center; gap: 6px; margin-right: 10px;">
+				        <span class="material-icons" style="color: #64748b; font-size: 20px;">event_note</span>
+				        <span style="color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Fechas del Mes:</span>
+				    </div>
+				    
+				    <label style="margin: 0; display: flex; align-items: center; gap: 5px; color: #334155; font-size: 0.9rem; font-weight: bold;">
+				        Cierre: <input type="date" id="fechaCierreMes" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; outline: none; font-size: 0.85rem;">
+				    </label>
+				    
+				    <label style="margin: 0; display: flex; align-items: center; gap: 5px; color: #334155; font-size: 0.9rem; font-weight: bold;">
+				        Vencimiento: <input type="date" id="fechaVtoMes" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; outline: none; font-size: 0.85rem;">
+				    </label>
+				    
+				    <button onclick="guardarFechasTarjetas()" style="padding: 5px 12px; font-size: 0.85rem; border-radius: 4px; background: #f0fdfa; color: #0d9488; border: 1px solid #0d9488; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+				        <span class="material-icons" style="font-size: 16px;">save</span> Guardar
+				    </button>
+				</div>
 				<div id="contenedorMisTarjetas" class="cards" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));"></div>
-                <h3 style="margin-top: 30px; margin-bottom: 15px; color: var(--texto-oscuro); font-size: 1.2rem;">Consumos para el mes seleccionado</h3>
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+				    <h3 style="color: var(--texto-oscuro); font-size: 1.2rem; margin: 0;">Consumos para el mes seleccionado</h3>
+				    <select id="filtroTarjetaSelect" onchange="refreshAll()" style="background: #222; color: white; border: 1px solid #555; padding: 5px 10px; border-radius: 5px; cursor: pointer; outline: none; font-weight: bold;">
+				        <option value="all">💳 TODAS</option>
+				    </select>
+				</div>
 				<div class="table-wrapper" style="max-height: 350px; overflow-y: auto; display: block; border-bottom: 1px solid #333;">
 				    <table class="table" id="tablaTarjetas">
                         <thead><tr><th>Fecha Compra</th><th>Descripción</th><th>Categoría</th><th>Cuota Actual</th><th>Monto Cuota</th><th>Acciones</th></tr></thead>
@@ -245,8 +269,11 @@
 		                
 		                <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
 		                
-		                <label>📅 Fecha de Vencimiento / Mes al que corresponde <input id="gastoVencimiento" type="date" required /></label>
-						<label>Mes de impacto</label><input type="month" id="gastoMesImpacto">
+		                <label><span id="labelTextGasto">📅 Fecha del Gasto</span> <input id="gastoVencimiento" type="date" /></label>
+						<div id="divMesImpacto" style="margin-top: 10px;">
+						    <label>Mes de impacto (Solo para gastos variables)</label>
+						    <input type="month" id="gastoMesImpacto">
+						</div>
 		                
 		                <div style="margin: 10px 0; background: #222; padding: 15px; border-radius: 5px; border: 1px solid #444;">
 		                    <label style="display:flex; align-items:center; gap:10px; margin:0; cursor:pointer;"><input type="checkbox" id="gastoPagado" style="width: 20px; height: 20px; accent-color: #2ac9bb;"> ✅ ¿Ya está pagado?</label>
@@ -281,20 +308,49 @@
 		    </div>
 		</div>
 
-		<div id="modalTarjeta" class="modal"><div class="modal-content"><span class="close" id="closeModalTarjeta" onclick="document.getElementById('modalTarjeta').style.display = 'none'">&times;</span><h3>🛒 Cargar Compra con Tarjeta</h3>
-		            <form id="formTarjeta" class="form">
-		                <label>Descripción (Ej: Zapatillas) <input id="tarjetaDescripcion" type="text" required placeholder="¿Qué compraste?" /></label>
-		                <label>Monto TOTAL de la compra <input id="tarjetaMontoTotal" type="number" step="0.01" required placeholder="$ 0.00" /></label>
-		                <div style="display: flex; gap: 15px; margin-top: 10px;">
-		                    <label style="flex: 1;">Cuotas <select id="tarjetaCuotas" required><option value="1">1 cuota (Un pago)</option><option value="3">3 cuotas</option><option value="6">6 cuotas</option><option value="9">9 cuotas</option><option value="12">12 cuotas</option><option value="18">18 cuotas</option><option value="24">24 cuotas</option></select></label>
-		                    <label style="flex: 1;">Mes de la 1° Cuota <input id="tarjetaPrimeraCuota" type="month" required /></label>
-		                </div>
-						<label>Día de compra</label><input type="number" id="tarjetaDia" min="1" max="31" value="10">
-		                <label>Seleccionar Tarjeta de Crédito<select id="tarjetaTipo" required></select></label>
-		                <label>Categoría <select id="tarjetaCategoria"></select></label>
-		                <button type="submit" class="btn" style="margin-top: 20px;">Calcular y Guardar Cuotas</button>
-		            </form>
-		        </div></div>
+		<div id="modalTarjeta" class="modal">
+		    <div class="modal-content">
+		        <span class="close" id="closeModalTarjeta" onclick="document.getElementById('modalTarjeta').style.display = 'none'">&times;</span>
+		        <h3>🛒 Cargar Compra con Tarjeta</h3>
+		        <form id="formTarjeta" class="form">
+		            <label>Descripción (Ej: Zapatillas) <input id="tarjetaDescripcion" type="text" required placeholder="¿Qué compraste?" /></label>
+		            
+		            <div style="display: flex; gap: 15px; margin-top: 10px;">
+		                <label style="flex: 1;">Moneda
+		                    <select id="tarjetaMoneda" required style="width: 100%; padding: 10px; border-radius: 5px; background: #333; color: white; border: 1px solid #444;">
+		                        <option value="ARS">Pesos (ARS)</option>
+		                        <option value="USD">Dólares (USD)</option>
+		                    </select>
+		                </label>
+		                <label style="flex: 2;">Monto TOTAL 
+		                    <input id="tarjetaMontoTotal" type="number" step="0.01" required placeholder="0.00" />
+		                </label>
+		            </div>
+
+		            <div style="display: flex; gap: 15px; margin-top: 10px;">
+		                <label style="flex: 1;">Cuotas 
+		                    <select id="tarjetaCuotas" required>
+		                        <option value="1">1 cuota (Un pago)</option>
+		                        <option value="3">3 cuotas</option>
+		                        <option value="6">6 cuotas</option>
+		                        <option value="9">9 cuotas</option>
+		                        <option value="12">12 cuotas</option>
+		                        <option value="18">18 cuotas</option>
+		                        <option value="24">24 cuotas</option>
+		                    </select>
+		                </label>
+		                <label style="flex: 1;">Mes de la 1° Cuota <input id="tarjetaPrimeraCuota" type="month" required /></label>
+		            </div>
+		            
+		            <label>Fecha exacta de la compra <input type="date" id="tarjetaFechaExacta" required></label>
+		            
+		            <label>Seleccionar Tarjeta de Crédito<select id="tarjetaTipo" required></select></label>
+		            <label>Categoría <select id="tarjetaCategoria"></select></label>
+		            
+		            <button type="submit" class="btn" style="margin-top: 20px;">Calcular y Guardar Cuotas</button>
+		        </form>
+		    </div>
+		</div>
 
         <div id="modalPrestamo" class="modal"><div class="modal-content"><span class="close" onclick="document.getElementById('modalPrestamo').style.display = 'none'">&times;</span>
             <h3>🤝 Cargar Cuota de Préstamo</h3>
@@ -349,6 +405,6 @@
       </section>
     </main>
   </div>
-  <script src="js/dashboard.js"></script>
+  <script src="js/dashboard.js?v=14"></script>
 </body>
 </html>
