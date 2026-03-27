@@ -29,7 +29,19 @@ public class BilleteraController {
         Usuario u = usuarioRepository.findById(billetera.getUsuario().getId()).orElse(null);
         if (u == null) return ResponseEntity.badRequest().body("Usuario no encontrado");
         billetera.setUsuario(u);
-        return ResponseEntity.ok(billeteraRepository.save(billetera));
+        Billetera guardado = billeteraRepository.save(billetera);
+        return ResponseEntity.ok(guardado);
+    }
+
+    // --- NUEVO MÉTODO PARA EDITAR ---
+    @PutMapping("/{id}")
+    public ResponseEntity<?> actualizarBilletera(@PathVariable Long id, @RequestBody Billetera detalles) {
+        Billetera billetera = billeteraRepository.findById(id).orElse(null);
+        if (billetera == null) return ResponseEntity.notFound().build();
+        billetera.setNombre(detalles.getNombre());
+        billetera.setColor(detalles.getColor());
+        Billetera actualizado = billeteraRepository.save(billetera);
+        return ResponseEntity.ok(actualizado);
     }
 
     @DeleteMapping("/{id}")

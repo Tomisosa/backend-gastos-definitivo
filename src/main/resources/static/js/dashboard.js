@@ -86,14 +86,34 @@ function generarGrafico(gastos) {
   const ctx = canvas.getContext('2d');
   const datosAgrupados = {};
   
+  // Armamos la lista de billeteras para saber si se pagó con tarjeta
+  const nombresBilleteras = ["BNA", "MERCADO PAGO", "EFECTIVO", "MERCADO_PAGO", "PENDIENTE", "MÚLTIPLES"];
+  globalBilleteras.forEach(b => nombresBilleteras.push(b.nombre.toUpperCase()));
+
   gastos.forEach(g => {
-    const cat = g.categoriaNombre || "Sin categoría";
+    let cat = g.categoriaNombre;
+
+    // MAGIA: Si el gasto no tiene categoría, la aplicación adivina de dónde viene
+    if (!cat || cat === "" || cat === "Sin categoría") {
+        const medio = (g.medioPago || "").toUpperCase();
+        const esTarjeta = !nombresBilleteras.includes(medio) && medio !== "";
+
+        if (esTarjeta) {
+            const esDolar = g.isUSD || (g.descripcion && g.descripcion.includes("[USD]"));
+            cat = esDolar ? "💳 Tarjetas (Dólares)" : "💳 Tarjetas (Pesos)";
+        } else {
+            cat = "Sin categoría";
+        }
+    }
+
     datosAgrupados[cat] = (datosAgrupados[cat] || 0) + (Number(g.monto) || 0);
   });
 
+  // Agregué un par de colores más para que no se repitan
   const coloresFinancieros = [
       '#1e3a8a', '#0284c7', '#0f766e', '#d97706', 
-      '#64748b', '#b91c1c', '#4338ca', '#a16207'
+      '#64748b', '#b91c1c', '#4338ca', '#a16207',
+      '#ffce56', '#2ac9bb'
   ];
 
   miGrafico = new Chart(ctx, {
@@ -139,7 +159,7 @@ function generarGrafico(gastos) {
     }
   });
 }
-// CÁLCULO INTELIGENTE DE SALDOS
+// --- CORRECCIÓN DE TARJETAS Y BOTONES ---
 function calcularSaldosPorCuenta(gastos, ingresos) {
     const nombres = ["BNA", "MERCADO PAGO", "EFECTIVO"];
     globalBilleteras.forEach(b => {
@@ -175,19 +195,35 @@ function calcularSaldosPorCuenta(gastos, ingresos) {
             if(b !== "BNA" && b !== "MERCADO PAGO" && b !== "EFECTIVO") color = "#a855f7"; 
 
             const customObj = globalBilleteras.find(x => x.nombre.toUpperCase() === b);
-            let btnEliminar = customObj ? `<button onclick="eliminarBilletera(${customObj.id})" style="position: absolute; top: 5px; right: 5px; background: none; border: none; cursor: pointer; color: #888; font-size: 0.9rem;">✖</button>` : '';
+            
+            // Botones de editar y eliminar (Solo para cuentas creadas por el usuario)
+            let btnAcciones = '';
+            if (customObj) {
+                // Las que la app trae por defecto (BNA, Mercado Pago, Efectivo) no se borran para no romper historial. 
+                // Las creadas por ella, tienen menú completo.
+                btnAcciones = `
+                <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; z-index: 10;">
+                    <button onclick="abrirEditarBilletera(${customObj.id}, '${customObj.nombre}', '${customObj.color || 'default'}')" style="background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;" title="Editar">✏️</button>
+                    <button onclick="eliminarBilletera(${customObj.id})" style="background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;" title="Eliminar">🗑️</button>
+                </div>
+                `;
+            }
 
             const montoAMostrar = saldosOcultos ? "••••••" : formatoMoneda(saldos[b]);
 
+            // Tamaño corregido: min-width 250px y height 140px. No estira la pantalla y se ve genial.
             contenedor.innerHTML += `
-            <div class="card-small" style="min-width: 160px; background: var(--bg-saldos); padding: 15px; border-radius: 12px; border-left: 4px solid ${color}; position: relative;">
-                ${btnEliminar}
-                <h4 style="color: #94a3b8; font-size: 0.8rem; margin: 0;">🏦 ${b}</h4>
-                <p style="font-size: 1.3rem; font-weight: bold; color: ${color}; margin: 5px 0 0 0;">${montoAMostrar}</p>
+            <div class="card-small" style="min-width: 250px; max-width: 250px; height: 140px; flex-shrink: 0; background: ${getBgColor(customObj ? customObj.color : (b === 'BNA' ? 'bna' : b === 'MERCADO PAGO' ? 'celeste' : 'default'))}; padding: 15px 20px; border-radius: 12px; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;">
+                ${btnAcciones}
+                <h4 style="color: rgba(255,255,255,0.8); font-size: 0.85rem; margin: 0; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🏦 ${b}</h4>
+                <div style="margin-top: auto;">
+                    <p style="font-size: 1.8rem; font-weight: bold; color: #fff; margin: 0; letter-spacing: -1px;">${montoAMostrar}</p>
+                </div>
             </div>`;
         });
     }
 }
+// --- FIN DE LA CORRECCIÓN ---
 
 function cargarSelectorFechas() {
   const selector = document.getElementById("filtroFechaMes");
@@ -497,24 +533,28 @@ async function refreshAll() {
   });
 
   const prestamosDelMes = pTodos.filter(p => (p.mesCuota || "").startsWith(mesSeleccionado));
-  let sumaTotalPrestamos = 0;
-  prestamosDelMes.forEach(p => {
-      sumaTotalPrestamos += (Number(p.aporteMama) || 0) + (Number(p.aporteBelen) || 0);
-  });
+    let sumaTotalMiaPrestamos = 0;
+    prestamosDelMes.forEach(p => {
+        // MAGIA: Solo suma tu aporte (el que está guardado en la base de datos como aporteBelen)
+        sumaTotalMiaPrestamos += (Number(p.aporteBelen) || 0); 
+    });
 
-  if (sumaTotalPrestamos > 0) {
-      gFiltradosMes.push({
-          id: 'virtual_prestamo',
-          descripcion: `Cuota Préstamos`,
-          monto: sumaTotalPrestamos,
-          fechaVencimiento: mesSeleccionado + "-10",
-          categoriaNombre: "🤝 Préstamos",
-          pagado: false,
-          medioPago: "MÚLTIPLES",
-          esFijo: true,
-          esVirtual: true
-      });
-  }
+    if (sumaTotalMiaPrestamos > 0) {
+        // MAGIA: Saca tu nombre dinámicamente
+        let nombreVirtual = user.nombre ? user.nombre.split(" ")[0].charAt(0).toUpperCase() + user.nombre.split(" ")[0].slice(1).toLowerCase() : 'vos';
+        
+        gFiltradosMes.push({
+            id: 'virtual_prestamo',
+            descripcion: `Resumen Préstamos (Pagado por ${nombreVirtual})`,
+            monto: sumaTotalMiaPrestamos,
+            fechaVencimiento: "Automático",
+            categoriaNombre: "🤝 Préstamos",
+            pagado: false,
+            medioPago: "MÚLTIPLES",
+            esFijo: true,
+            esVirtual: true
+        });
+    }
   
   const iFiltradosMes = iTodos.filter(i => {
           const fechaComparar = i.mesImpacto ? i.mesImpacto : i.fecha;
@@ -646,46 +686,102 @@ async function refreshAll() {
     renderProyeccion(ingresosNormales, gFijosParaTabla, gVariablesParaTabla, inversiones);
   }
 
-function renderPrestamos(prestamos) {
-    const tbody = document.querySelector("#tablaPrestamos tbody");
-    if(!tbody) return;
-    tbody.innerHTML = "";
+  function renderPrestamos(prestamos) {
+      const contenedor = document.getElementById("contenedorTablasPrestamos");
+      if(!contenedor) return;
+      contenedor.innerHTML = "";
 
-    let totalMama = 0;
-    let totalBelen = 0;
+      // MAGIA: Obtenemos tu nombre de usuario y lo ponemos prolijo (Ej: "tomas" -> "Tomas")
+      let minombre = user.nombre ? user.nombre.split(" ")[0] : "Vos";
+      minombre = minombre.charAt(0).toUpperCase() + minombre.slice(1).toLowerCase();
 
-    prestamos.forEach(p => {
-        const aMama = Number(p.aporteMama) || 0;
-        const aBelen = Number(p.aporteBelen) || 0;
-        const total = aMama + aBelen;
+      // Inyectamos el nombre en las tarjetas del HTML
+      document.querySelectorAll('.nombreDinamico').forEach(el => el.textContent = minombre);
 
-        totalMama += aMama;
-        totalBelen += aBelen;
+      const selector = document.getElementById("filtroFechaMes");
+      const mesSeleccionado = selector ? selector.value : new Date().toISOString().slice(0, 7);
 
-        tbody.innerHTML += `<tr>
-            <td>${p.mesCuota}</td>
-            <td>${formatoMoneda(aMama)}</td>
-            <td>${formatoMoneda(aBelen)}</td>
-            <td style="font-weight: bold; color: #2ac9bb;">${formatoMoneda(total)}</td>
-            <td><button onclick="eliminarPrestamo(${p.id})" class="btn-delete" style="background:none;border:none;cursor:pointer;font-size:1.1rem;" title="Eliminar Cuota">🗑️</button></td>
-        </tr>`;
-    });
+      // Filtramos solo los de este mes
+      const prestamosDelMes = prestamos.filter(p => p.mesCuota && p.mesCuota.startsWith(mesSeleccionado));
+      
+      const grupos = { "Mamá": [], "Papá": [], "Ambos": [] };
+      let sumaTotalMia = 0;
 
-    const cardMama = document.getElementById("totalAporteMama");
-    const cardBelen = document.getElementById("totalAporteBelen");
-    if(cardMama) cardMama.textContent = formatoMoneda(totalMama);
-    if(cardBelen) cardBelen.textContent = formatoMoneda(totalBelen);
-}
+      prestamosDelMes.forEach(p => {
+          const pertenece = p.perteneceA || "Desconocido";
+          const aBelen = Number(p.aporteBelen) || 0;
+          const aOtro = Number(p.aporteOtro) || 0;
+          const totalCuotaDinero = Number(p.montoTotal) || 0;
+
+          sumaTotalMia += aBelen;
+
+          if(grupos[pertenece]) {
+              grupos[pertenece].push({
+                  id: p.id, 
+                  nombre: p.nombre || "Sin Nombre", 
+                  cuotaActual: p.cuotaActual || 1, 
+                  cuotaTotal: p.cuotaTotal || 1, 
+                  aBelen, aOtro, totalCuotaDinero
+              });
+          }
+      });
+
+      const cardBelen = document.getElementById("totalBelenPrestamos");
+      if(cardBelen) cardBelen.textContent = formatoMoneda(sumaTotalMia);
+
+      // Dibujamos una tabla por cada persona
+      ["Mamá", "Papá", "Ambos"].forEach(grupo => {
+          if(grupos[grupo].length === 0) return;
+
+          let filas = "";
+          grupos[grupo].forEach(g => {
+              filas += `<tr>
+                  <td><strong>${g.nombre}</strong></td>
+                  <td><span style="background:var(--color-primario); color:#000; padding:2px 6px; border-radius:10px; font-size:0.8rem; font-weight:bold;">${g.cuotaActual}/${g.cuotaTotal}</span></td>
+                  <td>${formatoMoneda(g.totalCuotaDinero)}</td>
+                  <td style="color:#ffce56; font-weight:bold;">${formatoMoneda(g.aBelen)}</td>
+                  <td style="color:#94a3b8;">${formatoMoneda(g.aOtro)}</td>
+                  <td>
+                      <button onclick="abrirEditarPrestamo(${g.id}, ${g.totalCuotaDinero}, ${g.aBelen})" class="btn-edit" style="background:none;border:none;cursor:pointer;font-size:1.1rem;">✏️</button>
+                      <button onclick="eliminarPrestamo(${g.id})" class="btn-delete" style="background:none;border:none;cursor:pointer;font-size:1.1rem;">🗑️</button>
+                  </td>
+              </tr>`;
+          });
+
+          // ACÁ INYECTAMOS TU NOMBRE EN LA CABECERA DE LA TABLA (<th>${minombre}</th>)
+          contenedor.innerHTML += `
+          <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;">
+              <h3 style="margin-top: 0; color: #00aae4; border-bottom: 1px solid #333; padding-bottom: 5px;">Pertenece a: ${grupo}</h3>
+              <div class="table-wrapper tabla-con-scroll">
+                  <table class="table">
+                      <thead><tr><th>Préstamo</th><th>Cuota</th><th>Total Cuota</th><th style="color:#ffce56;">${minombre}</th><th>Aportado (Otro)</th><th>Acciones</th></tr></thead>
+                      <tbody>${filas}</tbody>
+                  </table>
+              </div>
+          </div>`;
+      });
+  }
 
 // --- TABLA FIJOS (CON BOTÓN DE PAGO RÁPIDO) ---
 function renderGastosFijos(lista) {
   const tbody = document.querySelector("#tablaGastosFijos tbody");
   if (!tbody) return; 
   tbody.innerHTML = "";
+  
   let total = 0;
+  let pagado = 0;
+  let faltaPagar = 0;
 
   lista.forEach(g => {
-    total += (Number(g.monto) || 0);
+    const montoNum = Number(g.monto) || 0;
+    total += montoNum;
+    
+    // Matemática mágica para los 3 cuadritos
+    if (g.pagado) {
+        pagado += montoNum;
+    } else {
+        faltaPagar += montoNum;
+    }
     
     let acciones = "";
     let estadoPagado = "";
@@ -714,10 +810,8 @@ function renderGastosFijos(lista) {
     }
 
     const vto = g.fechaVencimiento ? g.fechaVencimiento : "-";
-    
-    // MAGIA: Si es un gasto en USD, lo pintamos de verde claro y le ponemos "USD"
     let esDolar = g.isUSD || (g.descripcion && g.descripcion.includes("[USD]"));
-    let textoMonto = esDolar ? `<span style="color:#86efac;">USD ${Number(g.monto).toFixed(2)}</span>` : formatoMoneda(g.monto);
+    let textoMonto = esDolar ? `<span style="color:#86efac;">USD ${montoNum.toFixed(2)}</span>` : formatoMoneda(montoNum);
 
     tbody.innerHTML += `<tr>
         <td>${g.descripcion||"-"}</td>
@@ -731,9 +825,10 @@ function renderGastosFijos(lista) {
     </tr>`;
   });
 
-  if (document.getElementById("totalFijos")) {
-      document.getElementById("totalFijos").textContent = formatoMoneda(total);
-  }
+  // Actualizamos el HTML con los cálculos
+  if (document.getElementById("totalFijos")) document.getElementById("totalFijos").textContent = formatoMoneda(total);
+  if (document.getElementById("totalFijosPagado")) document.getElementById("totalFijosPagado").textContent = formatoMoneda(pagado);
+  if (document.getElementById("totalFijosFalta")) document.getElementById("totalFijosFalta").textContent = formatoMoneda(faltaPagar);
 }
 
 // --- TABLA VARIABLES (CON BOTÓN DE PAGO RÁPIDO) ---
@@ -851,8 +946,7 @@ function renderConsumosCuotas(lista) {
     });
 }
 
-/* --- ACCIONES PARA GUARDAR NUEVOS ELEMENTOS --- */
-
+// --- CREAR BILLETERA ---
 const formBilletera = document.getElementById("formBilletera");
 if (formBilletera) {
     formBilletera.onsubmit = async (e) => {
@@ -862,20 +956,45 @@ if (formBilletera) {
         try {
             const body = { 
                 nombre: document.getElementById("billeteraNombre").value.trim(), 
+                color: document.getElementById("billeteraColor").value, // GUARDAMOS COLOR
                 usuario: { id: user.id } 
             };
-            const response = await fetch(`${API}/billeteras`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
-            
-            if(!response.ok) throw new Error("Error del servidor al guardar billetera");
-            
+            await fetch(`${API}/billeteras`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
             document.getElementById("modalBilletera").style.display = "none";
             formBilletera.reset();
             await refreshAll();
-        } catch(err) { 
-            alert("Error al conectar con la base de datos."); 
-        } finally { 
-            btnSubmit.disabled = false; 
-        }
+        } catch(err) { alert("Error al guardar cuenta."); } 
+        finally { btnSubmit.disabled = false; }
+    };
+}
+
+// --- ABRIR EDITAR BILLETERA ---
+window.abrirEditarBilletera = function(id, nombre, color) {
+    document.getElementById("editBilleteraId").value = id;
+    document.getElementById("editBilleteraNombre").value = nombre;
+    
+    const selectColor = document.getElementById("editBilleteraColor");
+    if(selectColor) selectColor.value = color !== 'undefined' ? color : 'azul';
+
+    document.getElementById("modalEditarBilletera").style.display = "flex";
+};
+
+// --- GUARDAR EDICIÓN BILLETERA ---
+const formEditarBilletera = document.getElementById("formEditarBilletera");
+if (formEditarBilletera) {
+    formEditarBilletera.onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const id = document.getElementById("editBilleteraId").value;
+            const body = {
+                nombre: document.getElementById("editBilleteraNombre").value.trim(),
+                color: document.getElementById("editBilleteraColor").value
+            };
+            await fetch(`${API}/billeteras/${id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(body) });
+            
+            document.getElementById("modalEditarBilletera").style.display = "none";
+            await refreshAll();
+        } catch(err) { alert("Error al actualizar la cuenta."); }
     };
 }
 
@@ -927,21 +1046,43 @@ if (formPrestamo) {
         e.preventDefault();
         const btnSubmit = document.querySelector("#formPrestamo button[type='submit']");
         btnSubmit.disabled = true;
+        btnSubmit.textContent = "Generando...";
         try {
-            const body = {
-                mesCuota: document.getElementById("prestamoMes").value,
-                aporteMama: parseFloat(document.getElementById("prestamoMama").value),
-                aporteBelen: parseFloat(document.getElementById("prestamoBelen").value),
-                usuario: { id: user.id }
-            };
-            await fetch(`${API}/prestamos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
+            const nombre = document.getElementById("prestamoNombre").value.trim();
+            const pertenece = document.getElementById("prestamoPertenece").value;
+            const totalCuotas = parseInt(document.getElementById("prestamoTotalCuotas").value);
+            const mesInicio = document.getElementById("prestamoMesInicio").value;
+
+            const [year, month] = mesInicio.split('-');
+            let fechaActual = new Date(year, month - 1, 1);
+
+            for (let i = 1; i <= totalCuotas; i++) {
+                const yyyy = fechaActual.getFullYear();
+                const mm = String(fechaActual.getMonth() + 1).padStart(2, '0');
+
+                const body = {
+                    mesCuota: `${yyyy}-${mm}`, // Ahora solo guarda la fecha acá
+                    nombre: nombre,
+                    perteneceA: pertenece,
+                    cuotaActual: i,
+                    cuotaTotal: totalCuotas,
+                    montoTotal: 0,
+                    aporteBelen: 0,
+                    aporteOtro: 0,
+                    usuario: { id: user.id }
+                };
+                await fetch(`${API}/prestamos`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) });
+                fechaActual.setMonth(fechaActual.getMonth() + 1);
+            }
             document.getElementById("modalPrestamo").style.display = "none";
             formPrestamo.reset();
             await refreshAll();
+            alert(`¡Se generaron ${totalCuotas} cuotas con éxito!`);
         } catch(err) {
-            alert("Error al guardar préstamo.");
+            alert("Error al generar préstamo.");
         } finally {
             btnSubmit.disabled = false;
+            btnSubmit.textContent = "Generar Cuotas";
         }
     };
 }
@@ -1716,3 +1857,54 @@ window.guardarFechasTarjetas = async function() {
         alert("Error al guardar en la base de datos.");
     }
 };
+
+// NUEVA FUNCIÓN: Abrir modal de edición matemática
+window.abrirEditarPrestamo = function(id, total, belen) {
+    document.getElementById("editPrestamoId").value = id;
+    document.getElementById("editPrestamoTotal").value = total > 0 ? total : "";
+    document.getElementById("editPrestamoBelen").value = belen > 0 ? belen : "";
+    
+    // Calculadora en vivo
+    const inTotal = document.getElementById("editPrestamoTotal");
+    const inBelen = document.getElementById("editPrestamoBelen");
+    const outCalc = document.getElementById("calculoAportado");
+    
+    const recalcular = () => {
+        const t = Number(inTotal.value) || 0;
+        const b = Number(inBelen.value) || 0;
+        outCalc.textContent = formatoMoneda(t - b);
+    };
+    inTotal.onkeyup = recalcular;
+    inBelen.onkeyup = recalcular;
+    recalcular();
+
+    document.getElementById("modalEditarPrestamo").style.display = "flex";
+};
+
+// NUEVA FUNCIÓN: Guardar edición del préstamo (usando el PUT de Java)
+const formEditarPrestamo = document.getElementById("formEditarPrestamo");
+if (formEditarPrestamo) {
+    formEditarPrestamo.onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const id = document.getElementById("editPrestamoId").value;
+            const total = parseFloat(document.getElementById("editPrestamoTotal").value) || 0;
+            const belen = parseFloat(document.getElementById("editPrestamoBelen").value) || 0;
+            const aportado = total - belen; // Calcula lo del otro automáticamente
+
+            const body = {
+                montoTotal: total,
+                aporteBelen: belen,
+                aporteOtro: aportado
+            };
+            
+            // Llama al nuevo método PUT que creamos en Java
+            await fetch(`${API}/prestamos/${id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(body) });
+            
+            document.getElementById("modalEditarPrestamo").style.display = "none";
+            await refreshAll();
+        } catch(err) {
+            alert("Error al actualizar la cuota.");
+        }
+    };
+}
