@@ -3,14 +3,14 @@ import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
-@Table(name = "billeteras")
+@Table(name = "cuentas") // <-- ¡ACÁ ESTABA EL ERROR! AHORA APUNTA A LA TABLA REAL
 public class Billetera {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
     private String nombre;
-    private String color; // NUEVA COLUMNA PARA EL COLOR
+    private String color; // Asegurate de que esto siga estando
 
     @ManyToOne
     @JoinColumn(name = "usuario_id")
