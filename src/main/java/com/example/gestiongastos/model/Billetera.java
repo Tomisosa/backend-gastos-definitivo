@@ -1,20 +1,21 @@
 package com.example.gestiongastos.model;
 import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty; // <-- Importamos la nueva herramienta
 
 @Entity
-@Table(name = "cuentas") // <-- ¡ACÁ ESTABA EL ERROR! AHORA APUNTA A LA TABLA REAL
+@Table(name = "cuentas") 
 public class Billetera {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
     private String nombre;
-    private String color; // Asegurate de que esto siga estando
+    private String color; 
 
     @ManyToOne
     @JoinColumn(name = "usuario_id")
-    @JsonIgnore
+    // 👇 ESTA ES LA MAGIA: Permite guardar el usuario, pero lo protege al leer.
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) 
     private Usuario usuario;
 
     public Long getId() { return id; }
