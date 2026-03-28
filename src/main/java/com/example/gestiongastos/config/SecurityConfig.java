@@ -33,9 +33,16 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/usuarios/register", "/api/usuarios/login").permitAll()
-                // Permitimos todas las llamadas a la API para evitar bloqueos 403
-                .requestMatchers("/api/**").permitAll()
+                
+                // 🔥 ESTA ES LA CLAVE: Dejamos pasar los errores para que no se conviertan en 403
+                .requestMatchers("/error").permitAll() 
+                
+                // Permitimos los archivos visuales
                 .requestMatchers("/", "/index.html", "/registro.html", "/login.html", "/dashboard.html", "/css/**", "/js/**", "/favicon.ico", "/icono.png", "/*.png", "/*.json").permitAll()
+                
+                // 🔓 ABRIMOS LA API TEMPORALMENTE para descartar que el patovica te esté bloqueando
+                .requestMatchers("/api/**").permitAll() 
+                
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -46,11 +53,11 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Permitimos todos los orígenes para máxima compatibilidad
         configuration.setAllowedOriginPatterns(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
+        // Ajuste en los headers para evitar bloqueos del navegador
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
+        configuration.setAllowCredentials(false); // Mejor en false cuando usamos "*"
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
