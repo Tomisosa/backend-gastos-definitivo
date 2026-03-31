@@ -1,6 +1,6 @@
 package com.example.gestiongastos.model;
 import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "prestamos")
@@ -9,7 +9,6 @@ public class Prestamo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // --- NUEVAS COLUMNAS PROFESIONALES ---
     private String mesCuota;    // Ej: "2026-03"
     private String nombre;      // Ej: "Auto", "Heladera"
     private String perteneceA;  // Ej: "Mamá", "Papá", "Ambos"
@@ -22,7 +21,7 @@ public class Prestamo {
 
     @ManyToOne
     @JoinColumn(name = "usuario_id")
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // Permite guardar pero no mostrar
     private Usuario usuario;
 
     // --- GETTERS Y SETTERS ---

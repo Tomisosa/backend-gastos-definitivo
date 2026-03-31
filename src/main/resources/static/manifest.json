@@ -1,23 +1,23 @@
 {
-  "name": "Gestión de Gastos",
-  "short_name": "Gastos",
-  "start_url": "index.html",
+  "name": "Finty",
+  "short_name": "Finty",
+  "start_url": "splash.html",
   "display": "standalone",
-  "background_color": "#1a1a1a",
-  "theme_color": "#2ac9bb",
-  "description": "App personal de finanzas",
+  "background_color": "#0b1120", 
+  "theme_color": "#0b1120", 
+  "description": "Tu plata, tus reglas. Control inteligente.",
   "icons": [
     {
-      "src": "icono.png",
+      "src": "finty-logo.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "icono.png",
+      "src": "finty-logo.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }

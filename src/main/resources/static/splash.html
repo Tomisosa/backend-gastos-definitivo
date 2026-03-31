@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finty - Cargando...</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Fondo Azul Noche Profundo Profundo Profundo Profundo Profundo */
+    body.splash-page {
+      background-color: #0b1120; 
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Contenedor central de la animación */
+    .animacion-centro {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 180px; /* Un poquito más grande para el logo detallado */
+      height: 180px;
+    }
+
+    /* Ondas expansivas (Efecto latido/sonar que querías) */
+    .onda {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      background-color: #2ac9bb;
+      border-radius: 50%;
+      opacity: 0;
+      animation: expandirOnda 2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+    }
+
+    /* La segunda onda arranca un poquito después para hacer el efecto doble */
+    .onda:nth-child(2) {
+      animation-delay: 0.6s;
+    }
+
+    /* TU PROPIO LOGO GEOMÉTRICO FINTY (ANIMADO) */
+    /* Esta es la etiqueta donde irá TU imagen */
+	.finty-logo-splash {
+	      position: absolute; 
+	      z-index: 10;
+	      width: 130px; 
+	      height: auto;
+	      top: 50%;
+	      left: 50%;
+	      transform: translate(-50%, -50%) scale(1.6); 
+	      opacity: 0;
+	      animation: aparecerLogoComplex 1.5s ease-out forwards, floatLogo 4s ease-in-out infinite;
+	      filter: drop-shadow(0 0 15px rgba(42, 201, 187, 0.8)); 
+	      
+	      /* MAGIA: Esto hace que el fondo oscuro de tu JPG desaparezca */
+	      mix-blend-mode: screen; 
+	    }
+
+    /* El texto de bienvenida que sube suavemente */
+    .texto-bienvenida {
+      margin-top: 30px;
+      color: #2ac9bb;
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      opacity: 0;
+      animation: subirTexto 1s ease-out 1s forwards; /* Empieza después del logo */
+    }
+
+    /* --- LAS ANIMACIONES --- */
+    
+    /* Efecto de resplandor expansivo */
+    @keyframes expandirOnda {
+      0% {
+        transform: scale(0.5);
+        opacity: 0.8;
+      }
+      100% {
+        transform: scale(3.5);
+        opacity: 0;
+      }
+    }
+
+    /* Animación de aparición para el logo geométrico complejo */
+    @keyframes aparecerLogoComplex {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.2) rotate(-20deg);
+      }
+      100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.6) rotate(0deg);
+      }
+    }
+
+    /* Flotado suave del logo (ajustado para que el translate no se rompa) */
+    @keyframes floatLogo {
+      0%, 100% { transform: translate(-50%, -50%) scale(1.6); }
+      50% { transform: translate(-50%, -50%) translateY(-5px) scale(1.6); }
+    }
+
+    /* Entrada suave del texto */
+    @keyframes subirTexto {
+      0% {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body class="splash-page">
+
+  <div class="animacion-centro">
+    <div class="onda"></div>
+    <div class="onda"></div>
+    
+    <img src="finty-logo.png" alt="Finty Logo" class="finty-logo-splash">
+  </div>
+
+  <div class="texto-bienvenida">F I N T Y</div>
+
+  <script>
+    setTimeout(() => {
+      // Nos vamos al inicio con una transición suave
+      document.body.style.transition = "opacity 0.5s ease";
+      document.body.style.opacity = "0";
+      
+      setTimeout(() => {
+          window.location.href = "index.html"; 
+      }, 500); // Espera medio segundo a que se ponga en negro antes de saltar
+      
+    }, 3000); // A los 3 segundos empieza a irse
+  </script>
+
+</body>
+</html>

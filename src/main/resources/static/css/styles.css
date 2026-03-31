@@ -1,5 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+/* ==========================================================================
+   0. VARIABLES GLOBALES Y RESET
+   ========================================================================== */
 :root {
   /* Unificamos al turquesa elegante que ya usabas */
   --color-primario: #2ac9bb;      
@@ -20,6 +23,9 @@
   --hover-izq: #334155;          /* Hover sutil */
 }
 
+/* ==========================================================================
+   1. PÁGINAS DE INICIO Y AUTENTICACIÓN (Index, Login, Registro)
+   ========================================================================== */
 /* =========================================================
    PÁGINAS DE INICIO Y AUTENTICACIÓN (Index, Login, Registro)
    ========================================================= */
@@ -29,15 +35,16 @@ body.inicio, body.auth {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background-color: var(--bg-derecha); 
+    /* MAGIA: Le ponemos el mismo Azul Noche ultra premium del menú */
+    background-color: var(--bg-izquierda); 
     text-align: center;
     padding: 20px;
     overflow: hidden; 
 }
 
-/* --- Landing Page Premium (Index) --- */
+/* Efecto de luz de fondo para que no sea un color plano */
 body.premium-landing {
-    background: radial-gradient(circle at top, #ffffff 0%, var(--bg-derecha) 100%);
+    background: radial-gradient(circle at top, #162133 0%, var(--bg-izquierda) 100%);
 }
 
 .hero-container {
@@ -46,45 +53,6 @@ body.premium-landing {
     max-width: 450px;
     padding: 20px;
     margin-top: -30px;
-}
-
-.logo-icon {
-    font-size: 5.5rem;
-    margin-bottom: 35px;
-    display: inline-block;
-    filter: drop-shadow(0 4px 15px rgba(42, 201, 187, 0.3)); 
-    animation: float 4s ease-in-out infinite;
-}
-
-.premium-landing header h1 {
-    font-size: 3rem;
-    color: var(--texto-oscuro); 
-    margin: 0 0 30px 0;
-    letter-spacing: -1px;
-    line-height: 1.1;
-}
-
-.premium-landing header h1 span {
-    color: var(--color-primario);
-    display: block;
-    margin-top: 8px;
-}
-
-.premium-landing main h2 {
-    color: var(--texto-oscuro);
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-top: 0;
-    margin-bottom: 20px;
-    line-height: 1.4;
-}
-
-.premium-landing main p {
-    color: var(--texto-claro);
-    font-size: 1.05rem;
-    line-height: 1.6;
-    margin-bottom: 55px;
-    padding: 0 10px;
 }
 
 /* --- Botones Landing Premium --- */
@@ -106,15 +74,15 @@ body.premium-landing {
     font-weight: 700;
     font-size: 1.1rem;
     transition: transform 0.2s, box-shadow 0.2s;
-    box-shadow: 0 8px 20px rgba(42, 201, 187, 0.25);
     width: 100%;
     box-sizing: border-box;
     display: inline-block;
 }
 
+/* Botón secundario ajustado para fondo oscuro */
 .btn-secundario-new {
     background: transparent;
-    color: var(--texto-oscuro);
+    color: var(--texto-blanco); /* Letras blancas para contraste */
     padding: 18px;
     border-radius: 14px;
     text-decoration: none;
@@ -210,6 +178,9 @@ body.premium-landing {
     background-color: #1eb3a5;
 }
 
+/* ==========================================================================
+   2. GENERAL & LAYOUT (DASHBOARD)
+   ========================================================================== */
 /* =========================================================
    GENERAL & LAYOUT (DASHBOARD)
    ========================================================= */
@@ -264,16 +235,24 @@ input, textarea, select {
 .nav-item:hover { background-color: var(--hover-izq); }
 .nav-item.active { background-color: var(--color-primario); color: #ffffff; font-weight: 600; }
 
-.main { flex: 1; background-color: var(--bg-derecha); display: flex; flex-direction: column; }
+.main { 
+    flex: 1; 
+    background-color: var(--bg-derecha); 
+    display: flex; 
+    flex-direction: column; 
+    min-width: 0; /* <-- MAGIA 1: Obliga al contenedor a respetar tu pantalla */
+}
 
 /* AQUÍ ESTÁ EL TRUCO DE ORO: padding-bottom grande para dejar scrollear de más */
 .content { 
     flex: 1; 
     overflow-y: auto; 
+    overflow-x: hidden; /* <-- MAGIA 2: Evita que la página se rompa hacia los costados */
     padding: 2rem; 
     padding-bottom: 120px; /* Esto permite scroll por encima del botón */
     position: relative; 
 }
+
 
 /* Cabecera y fondo oscuro del móvil (ocultos en PC) */
 .mobile-header { display: none; }
@@ -283,6 +262,9 @@ input, textarea, select {
 .page { display: none; } 
 .page.visible { display: block !important; animation: fadeIn 0.4s ease; }
 
+/* ==========================================================================
+   3. PANELES, TARJETAS Y TABLAS
+   ========================================================================== */
 /* ==== PANELES Y TARJETAS ==== */
 .panel, .card { 
     background-color: var(--bg-tarjetas); 
@@ -326,6 +308,9 @@ input, textarea, select {
 .highlight.positivo { color: #2ac9bb; }
 .highlight.negativo { color: #ff6384; }
 
+/* ==========================================================================
+   4. BOTÓN FLOTANTE DEFINITIVO (PRO)
+   ========================================================================== */
 /* =========================================================
    BOTÓN FLOTANTE DEFINITIVO (PRO)
    ========================================================= */
@@ -383,6 +368,9 @@ input, textarea, select {
 .fab-label { background: white; color: #333; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 .fab-mini-btn { width: 45px; height: 45px; border-radius: 50%; border: none; background: white; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
 
+/* ==========================================================================
+   5. MODALES Y FORMULARIOS
+   ========================================================================== */
 /* ==== MODALES Y FORMULARIOS ==== */
 .modal { 
     position: fixed; 
@@ -424,6 +412,9 @@ input, textarea, select {
 }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
+/* ==========================================================================
+   6. ADAPTACIÓN PARA CELULARES (MENÚ HAMBURGUESA Y DISEÑO LIMPIO)
+   ========================================================================== */
 /* =========================================================
    ADAPTACIÓN PARA CELULARES (MENÚ HAMBURGUESA Y DISEÑO LIMPIO)
    ========================================================= */
@@ -491,7 +482,17 @@ input, textarea, select {
   /* Mismo margen extra para que no tape la basura de la tabla en celular */
   .content { padding: 15px; padding-bottom: 120px; }
   
-  .cards, .wallet-cards { display: flex !important; flex-direction: column !important; gap: 15px !important; }
+  /* Le dejamos la columna solo al "Total Gastado" (.cards) */
+  .cards { display: flex !important; flex-direction: column !important; gap: 15px !important; }
+
+  /* Y blindamos el carrusel (.wallet-cards) para que siga siendo una fila (row) */
+  .wallet-cards { 
+      display: flex !important; 
+      flex-direction: row !important; 
+      flex-wrap: nowrap !important; 
+      overflow-x: auto !important; 
+      gap: 1.5rem !important;
+  }
   .card { width: 100% !important; }
   .card .highlight { font-size: 1.3rem !important; word-break: break-all !important; white-space: normal !important; }
   
@@ -501,6 +502,9 @@ input, textarea, select {
   .card h3 { display: flex !important; justify-content: space-between !important; align-items: center !important; }
 }
 
+/* ==========================================================================
+   7. ARREGLO DEFINITIVO: TARJETAS SUPERIORES Y SELECTOR
+   ========================================================================== */
 /* =========================================================
    ARREGLO DEFINITIVO: TARJETAS SUPERIORES Y SELECTOR
    ========================================================= */
@@ -618,4 +622,655 @@ select:focus, #filtroFechaMes:focus {
     right: 0;
     bottom: -1px;
     border-bottom: 1px solid #e2e8f0; /* Borde clarito a juego */
+}
+
+/* ==========================================================================
+   8. DISEÑO DE TARJETAS Y RESPONSIVE (PC vs MÓVIL)
+   ========================================================================== */
+/* =========================================================
+   DISEÑO DE TARJETAS Y RESPONSIVE (PC vs MÓVIL)
+   ========================================================= */
+
+/* 1. Base para Celulares (Compacto) */
+.tarjeta-billetera {
+    flex: 0 0 170px; /* Ancho fijo para deslizar */
+    width: 170px;
+    height: 110px;
+    padding: 16px;
+    border-radius: 16px;
+    position: relative;
+    box-shadow: 0 8px 20px -4px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    scroll-snap-align: start;
+    transition: all 0.3s ease;
+}
+
+.tarjeta-billetera h4 {
+    color: rgba(255,255,255,0.95);
+    font-size: 0.75rem;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    max-width: 65px; /* <-- ¡AQUÍ ESTÁ LA MAGIA! Lo achicamos de 90 a 65 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.tarjeta-billetera p {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* =========================================================
+   DISEÑO DE TARJETAS Y RESPONSIVE (PC vs MÓVIL)
+   ========================================================= */
+
+/* 1. BASE PARA CELULARES (AFUERA del @media) */
+/* Todo esto se aplica por defecto a los teléfonos */
+
+.tarjeta-billetera {
+    flex: 0 0 210px; /* Tarjetas más anchas en el celu */
+    width: 210px;
+    height: 130px;   /* Tarjetas más altas */
+    padding: 18px;
+    border-radius: 16px;
+    position: relative;
+    box-shadow: 0 8px 20px -4px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    scroll-snap-align: start;
+    transition: all 0.3s ease;
+}
+
+.tarjeta-billetera h4 {
+    color: rgba(255,255,255,0.95);
+    font-size: 0.8rem;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    max-width: 100px; /* Como la tarjeta es más ancha, le damos más espacio a la letra */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.tarjeta-billetera p {
+    font-size: 1.6rem; /* Monto de la tarjeta un poco más grande */
+    font-weight: 800;
+    color: #fff;
+    margin: 0;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* NÚMERO TOTAL MÁS CHICO EN CELULAR */
+#totalGastado {
+    font-size: 2.2rem !important; /* Lo bajamos un cambio para que no grite en el celu */
+}
+
+
+/* --------------------------------------------------------- */
+/* 2. ADAPTACIÓN PARA COMPUTADORAS (PANTALLA GRANDE) */
+/* Todo lo que esté adentro de esta llave solo afecta a la PC */
+/* --------------------------------------------------------- */
+@media (min-width: 768px) {
+    
+    /* El número del total vuelve a ser gigante en la compu */
+    #totalGastado {
+        font-size: 3rem !important; 
+    }
+
+    /* Textos de la cabecera más grandes */
+    .titulo-dinero { font-size: 1.8rem !important; }
+    #iconoSaldos { font-size: 26px !important; }
+
+    /* Botones superiores más grandes */
+    .btn-cuadrado {
+        width: 55px !important;
+        height: 55px !important;
+        border-radius: 14px !important;
+    }
+    .btn-cuadrado .material-icons { font-size: 28px !important; }
+    
+    #countCategorias {
+        width: 22px !important;
+        height: 22px !important;
+        font-size: 0.8rem !important;
+        top: -6px !important;
+        right: -6px !important;
+    }
+
+    /* Tarjetas de débito GIGANTES en la compu */
+    .tarjeta-billetera {
+        flex: 0 0 320px; /* Casi el doble de anchas */
+        width: 320px;
+        height: 160px;   /* Mucho más altas */
+        padding: 24px;   /* Más aire interior */
+        border-radius: 20px;
+    }
+    
+    .tarjeta-billetera h4 {
+        font-size: 1.1rem; /* Título de cuenta grande */
+        max-width: 200px;
+    }
+
+    .tarjeta-billetera p {
+        font-size: 2.2rem; /* Monto inmenso */
+    }
+}
+
+/* =========================================================
+   COLORES UNIFICADOS PARA MONTOS EN TABLAS
+   ========================================================= */
+.monto-gasto {
+    color: #FF5454 !important; /* Rojo para todos los gastos */
+    font-weight: bold;
+}
+
+.monto-ingreso {
+    color: var(--color-primario) !important; /* Turquesa para ingresos */
+    font-weight: bold;
+}
+
+/* --- PARCHE ANTIDESBORDE FORZADO --- */
+.main { min-width: 0 !important; }
+.content { overflow-x: hidden !important; max-width: 100% !important; }
+@media (min-width: 769px) { 
+    .mobile-header { display: none !important; } 
+}
+
+/* ==========================================================================
+   9. NUEVO LOGO FINTY (ANIMADO)
+   ========================================================================== */
+/* =========================================================
+   NUEVO LOGO FINTY (ANIMADO)
+   ========================================================= */
+.brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.brand h1 {
+    margin: 0;
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: var(--texto-blanco);
+    letter-spacing: 0.5px;
+    text-shadow: none; /* Adiós a la sombra vieja */
+}
+
+.brand-mobile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 15px;
+}
+
+.brand-mobile h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: white;
+    letter-spacing: 0.5px;
+}
+
+/* Contenedor del logo: Cuadrado moderno con bordes redondeados */
+.finty-logo-splash {
+      position: absolute; 
+      z-index: 10;
+      width: 130px; 
+      height: auto;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(1.6); 
+      opacity: 0;
+      animation: aparecerLogoComplex 1.5s ease-out forwards, floatLogo 4s ease-in-out infinite;
+      filter: drop-shadow(0 0 15px rgba(42, 201, 187, 0.8)); 
+    }
+
+.finty-logo-container.mini {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+}
+
+/* La letra F central */
+.finty-f {
+    position: relative;
+    z-index: 2;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+    font-style: italic; /* Le da un toque de velocidad/dinamismo */
+    padding-right: 2px;
+}
+
+.finty-logo-container.mini .finty-f {
+    font-size: 1.2rem;
+}
+
+/* El punto animado (Aura de luz interna que rebota) */
+.finty-dot {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+    animation: moveGlow 3s infinite ease-in-out;
+}
+
+/* Animación: El brillo interno viaja por el cuadradito */
+@keyframes moveGlow {
+    0% { transform: translate(-20px, -20px) scale(1); }
+    50% { transform: translate(20px, 20px) scale(1.5); }
+    100% { transform: translate(-20px, -20px) scale(1); }
+}
+
+/* =========================================================
+   NUEVO LOGO FINTY (ANIMADO)
+   ========================================================= */
+.brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.brand h1 {
+    margin: 0;
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: var(--texto-blanco);
+    letter-spacing: 0.5px;
+    text-shadow: none;
+}
+
+.brand-mobile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 15px;
+}
+
+.brand-mobile h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: white;
+    letter-spacing: 0.5px;
+}
+
+/* Contenedor del logo: Cuadrado moderno con bordes redondeados */
+.finty-logo-container {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    /* Degradado turquesa espectacular */
+    background: linear-gradient(135deg, var(--color-primario) 0%, #0f766e 100%);
+    border-radius: 12px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(42, 201, 187, 0.4);
+    overflow: hidden;
+}
+
+.finty-logo-container.mini {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+}
+
+/* La letra F central */
+.finty-f {
+    position: relative;
+    z-index: 2;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+    font-style: italic; /* Le da un toque de velocidad/dinamismo */
+    padding-right: 2px;
+}
+
+.finty-logo-container.mini .finty-f {
+    font-size: 1.2rem;
+}
+
+/* El punto animado (Aura de luz interna que rebota) */
+.finty-dot {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+    animation: moveGlow 3s infinite ease-in-out;
+}
+
+/* Animación: El brillo interno viaja por el cuadradito */
+@keyframes moveGlow {
+    0% { transform: translate(-20px, -20px) scale(1); }
+    50% { transform: translate(20px, 20px) scale(1.5); }
+    100% { transform: translate(-20px, -20px) scale(1); }
+}
+
+/* =========================================================
+   ANIMACIÓN DE ENTRADA PARA EL SPLASH SCREEN (FINTY)
+   ========================================================= */
+
+@keyframes splashLogoEntry {
+    0% {
+        opacity: 0;
+        /* Empieza más chico y un poco más abajo */
+        transform: scale(0.5) translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        /* Termina en su escala grande (2.5 defined en el HTML) y centrado */
+        transform: scale(2.5) translateY(0);
+    }
+}
+
+/* ==========================================================================
+   10. DISEÑO INDEX PREMIUM Y CASCADAS 3D
+   ========================================================================== */
+/* =========================================================
+   DISEÑO INDEX PREMIUM (EFECTO FOCO CENTRAL COMO LA FOTO)
+   ========================================================= */
+
+body.premium-landing {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: radial-gradient(circle at top, #1a2639 0%, var(--bg-izquierda) 100%);
+    margin: 0;
+    padding: 50px 20px 20px 20px;
+    overflow-x: hidden;
+}
+
+/* --- TEXTOS CENTRALES --- */
+.landing-content {
+    text-align: center;
+    max-width: 600px;
+    margin-bottom: 50px;
+    animation: fadeIn 1s ease-out;
+    z-index: 20;
+}
+
+.landing-content h1 {
+    font-size: 4.5rem;
+    color: #ffffff;
+    margin: 0 0 10px 0;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+.landing-content h2 {
+    color: var(--color-primario);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 25px 0;
+}
+
+.landing-content p {
+    color: #cbd5e1;
+    font-size: 1.15rem;
+    line-height: 1.6;
+    margin-bottom: 35px;
+}
+
+/* --- BOTONES EN LÍNEA --- */
+.acciones {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.btn-principal, .btn-secundario-new {
+    padding: 16px 35px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+    min-width: 180px;
+    text-align: center;
+}
+
+.btn-principal {
+    background: var(--color-primario);
+    color: #ffffff;
+    box-shadow: 0 8px 25px rgba(42, 201, 187, 0.3);
+}
+
+.btn-secundario-new {
+    background: transparent;
+    color: var(--texto-blanco);
+    border: 2px solid var(--color-primario);
+}
+
+.btn-principal:hover { background: #1eb3a5; transform: translateY(-3px); }
+.btn-secundario-new:hover { background: var(--color-primario); color: #ffffff; transform: translateY(-3px); }
+
+
+/* --- CONTENEDOR DE TARJETAS --- */
+.app-previews-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 1100px;
+    margin-top: 10px;
+}
+
+.app-preview-card {
+    background-color: #1e293b;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.5s ease;
+}
+
+.app-preview-card img {
+    width: 100%;
+    display: block;
+}
+
+/* Barrita estilo Mac */
+.mockup-bar {
+    height: 32px;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+}
+
+.mac-dots { display: flex; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot.red { background-color: #ff5f56; }
+.dot.yellow { background-color: #ffbd2e; }
+.dot.green { background-color: #27c93f; }
+
+.mockup-title {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    left: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+}
+
+/* =========================================================
+   COMPUTADORA: EFECTO SUPERPUESTO (COMO LA FOTO)
+   ========================================================= */
+@media (min-width: 900px) {
+    .app-previews-container {
+        height: 350px; /* Altura fija para que floten absolutas */
+    }
+
+    /* La del medio: Grande, Brillante y al Frente */
+    .center-card {
+        position: relative;
+        z-index: 10;
+        width: 60%; 
+        max-width: 600px;
+        border: 2px solid var(--color-primario); /* Borde neón */
+        box-shadow: 0 0 50px rgba(42, 201, 187, 0.35), 0 20px 40px rgba(0,0,0,0.6);
+    }
+
+    /* Izquierda y Derecha: Más chicas, atrás y oscurecidas */
+    .left-card, .right-card {
+        position: absolute;
+        width: 45%; 
+        z-index: 5;
+        opacity: 0.6;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+    }
+
+    .left-card {
+        left: 0;
+        transform: scale(0.85);
+        transform-origin: left center;
+    }
+
+    .right-card {
+        right: 0;
+        transform: scale(0.85);
+        transform-origin: right center;
+    }
+}
+
+/* =========================================================
+   CELULAR: CARRUSEL DESLIZABLE
+   ========================================================= */
+@media (max-width: 899px) {
+    .acciones {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn-principal, .btn-secundario-new {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .landing-content h1 { font-size: 3.5rem; }
+
+    /* En celu se transforma en un carrusel */
+    .app-previews-container {
+        justify-content: flex-start;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        padding: 10px 20px 40px 20px;
+        gap: 20px;
+    }
+    
+    .app-previews-container::-webkit-scrollbar { display: none; }
+
+    .app-preview-card {
+        flex: 0 0 280px; 
+        scroll-snap-align: center; 
+    }
+
+    .center-card {
+        border: 2px solid var(--color-primario);
+        box-shadow: 0 0 30px rgba(42, 201, 187, 0.3);
+    }
+}
+
+/* ==========================================================================
+   11. DISEÑO EXACTO "TICKET PREMIUM" Y TOP CATEGORÍAS
+   ========================================================================== */
+/* =========================================================
+   DISEÑO EXACTO "TICKET PREMIUM" (SALDO NETO)
+   ========================================================= */
+
+#totalGastoWidget {
+    display: block !important; 
+    padding: 24px 20px !important;
+}
+
+#totalGastoWidget > div:nth-child(1) {
+    margin-bottom: 8px !important;
+}
+
+#saldoNetoProtagonista {
+    font-size: clamp(2rem, 8vw, 2.8rem) !important;
+    margin-bottom: 25px !important;
+    letter-spacing: -1px !important;
+    text-align: left !important;
+    white-space: nowrap !important; 
+    overflow: hidden !important; 
+    text-overflow: ellipsis !important;
+}
+
+/* CONTENEDOR NUEVO PARA GASTOS E INGRESOS */
+.info-barra {
+    display: flex !important;
+    flex-direction: row !important; /* Forzamos fila, no columna */
+    justify-content: space-between !important; /* Empuja a los extremos */
+    align-items: flex-end !important;
+    width: 100% !important;
+    margin-bottom: 8px !important;
+}
+
+#caja-gastos-finty {
+    text-align: left !important;
+    font-size: clamp(0.9rem, 4.5vw, 1.05rem) !important; 
+    font-weight: 700 !important; 
+    color: #334155 !important; 
+    margin: 0 !important; 
+}
+
+#caja-ingresos-finty {
+    text-align: right !important;
+    font-size: clamp(0.9rem, 4.5vw, 1.05rem) !important; 
+    font-weight: 700 !important; 
+    color: #334155 !important; 
+    margin: 0 !important;
+}
+
+/* La Barra de progreso */
+#totalGastoWidget > div:nth-child(5) { 
+    height: 10px !important; 
+    margin-bottom: 10px !important;
+    border-radius: 10px !important;
+    width: 100% !important;
+}
+
+/* El % consumido */
+#totalGastoWidget > div:nth-child(6) { 
+    text-align: right !important;
+    margin-bottom: 25px !important; 
+    font-size: 0.85rem !important;
+    font-weight: 800 !important;
+    color: #ef4444 !important; 
 }
