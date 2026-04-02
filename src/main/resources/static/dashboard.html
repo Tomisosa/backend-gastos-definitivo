@@ -179,12 +179,12 @@
                         </div>
                         <p style="color: var(--texto-claro); margin-bottom: 25px;">Control de deudas y cuotas compartidas.</p>
                         
-                        <div class="cards" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 20px;">
-                            <div class="card" style="background: #222; border-left: 4px solid #ffce56;">
-                                <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0;">Total a pagar por <span class="nombreDinamico">vos</span> este mes</h4>
-                                <p id="totalBelenPrestamos" style="font-size: 1.5rem; font-weight: bold; color: #ffce56; margin: 5px 0 0 0;">$ 0.00</p>
-                            </div>
-                        </div>
+						<div class="cards" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 20px;">
+						    <div class="card" style="background: #ffffff; border-left: 4px solid #f59e0b; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+						        <h4 style="color: #64748b; font-size: 0.85rem; margin: 0; text-transform: uppercase; font-weight: 700;">Total a pagar por <span class="nombreDinamico">vos</span> este mes</h4>
+						        <p id="totalBelenPrestamos" style="font-size: 1.8rem; font-weight: 800; color: #d97706; margin: 5px 0 0 0;">$ 0.00</p>
+						    </div>
+						</div>
 
                         <div id="contenedorTablasPrestamos"></div>
 
@@ -287,52 +287,69 @@
 				<div class="fab-container" id="mainFabContainer">
 				    <div class="fab-options" id="fabOptions">
 				        <div class="fab-label-container" id="btnFabIngreso"><span class="fab-label">Agregar Ingreso</span><button class="fab-mini-btn" style="color: #2ac9bb;"><span class="material-icons">attach_money</span></button></div>
-				        <div class="fab-label-container" id="btnFabGasto"><span class="fab-label">Agregar Gasto</span><button class="fab-mini-btn" style="color: #ff6384;"><span class="material-icons">shopping_cart</span></button></div>
+				        <div class="fab-label-container" id="btnFabGastoFijo"><span class="fab-label">Gasto Fijo</span><button class="fab-mini-btn" style="color: #f59e0b;"><span class="material-icons">lock</span></button></div>
+				        <div class="fab-label-container" id="btnFabGastoVariable"><span class="fab-label">Gasto Variable</span><button class="fab-mini-btn" style="color: #ff6384;"><span class="material-icons">shopping_cart</span></button></div>
 				    </div>
 				    <button class="fab-main" id="fabMain"><span class="material-icons" style="font-size: 32px;">add</span></button>
 				</div>
 
-                <div id="modalGasto" class="modal">
-                    <div class="modal-content"><span class="close" id="closeModal">&times;</span>
-                        <h3>Agregar Gasto</h3>
-                        <form id="formGasto" class="form">
-                            <input type="hidden" id="gastoId" value="">
-                            <div style="margin: 10px 0; background: #333; padding: 10px; border-radius: 5px; display: flex; align-items: center; gap: 10px;">
-                                <input type="checkbox" id="gastoEsFijo" style="width: 20px; height: 20px; accent-color: #ffce56;">
-                                <label for="gastoEsFijo" style="margin:0; cursor:pointer;">🔒 ¿Es Gasto FIJO?</label>
-                            </div>
-                            <div id="camposFijos" style="display:none; margin-top:10px; background:#222; padding:15px; border-radius:5px; border:1px solid #444;">
-                                <label>🔁 Tipo de repetición</label>
-                                <select id="tipoRepeticion">
-                                    <option value="mensual">📅 Todos los meses</option>
-                                    <option value="3meses">📆 Cada 3 meses</option>
-                                    <option value="6meses">🗓 Cada 6 meses</option>
-                                </select>
-                                <label style="margin-top:10px;">Cantidad de veces que se repetirá</label>
-                                <input type="number" id="gastoRepeticion" min="1" max="60" value="12">
-                                <p style="font-size:0.8rem; color:#888; margin-top:5px;">Ejemplo: 12 = se crearán gastos durante 12 períodos</p>
-                            </div>
-                            
-                            <label>Concepto <input id="gastoDescripcion" type="text" required /></label>
-                            <label>Monto <input id="gastoMonto" type="number" step="0.01" required /></label>
-                            <label>Categoría <select id="gastoCategoria"></select></label>
-                            <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
-                            <label><span id="labelTextGasto">📅 Fecha del Gasto</span> <input id="gastoVencimiento" type="date" /></label>
-                            <div id="divMesImpacto" style="margin-top: 10px;">
-                                <label>Mes de impacto (Solo para gastos variables)</label>
-                                <input type="month" id="gastoMesImpacto">
-                            </div>
-                            <div style="margin: 10px 0; background: #222; padding: 15px; border-radius: 5px; border: 1px solid #444;">
-                                <label style="display:flex; align-items:center; gap:10px; margin:0; cursor:pointer;"><input type="checkbox" id="gastoPagado" style="width: 20px; height: 20px; accent-color: #2ac9bb;"> ✅ ¿Ya está pagado?</label>
-                                <div id="divFechaPagoReal" style="display: none; margin-top: 15px; border-top: 1px solid #444; padding-top: 15px;">
-                                    <label style="margin:0; color: #2ac9bb;">📅 ¿Qué día lo pagaste realmente? <input id="gastoFecha" type="date" style="margin-top: 5px;" /></label>
-                                    <label style="margin-top: 15px; color: #2ac9bb;">🏦 ¿De dónde salió la plata? <select id="gastoMedio" style="margin-top: 5px;"></select></label>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn" style="margin-top: 15px;">Guardar</button>
-                        </form>
-                    </div>
-                </div>
+				<div id="modalGastoFijo" class="modal">
+				    <div class="modal-content"><span class="close" onclick="document.getElementById('modalGastoFijo').style.display='none'">&times;</span>
+				        <h3 style="color: #f59e0b;">🔒 Agregar Gasto Fijo</h3>
+				        <form id="formGastoFijo" class="form">
+				            <input type="hidden" id="gastoFijoId" value="">
+				            
+				            <div id="camposFijosDiv" style="margin-bottom:15px; background:#222; padding:15px; border-radius:5px; border:1px solid #444;">
+				                <label>🔁 Tipo de repetición</label>
+				                <select id="tipoRepeticionFijo">
+				                    <option value="mensual">📅 Todos los meses</option>
+				                    <option value="3meses">📆 Cada 3 meses</option>
+				                    <option value="6meses">🗓 Cada 6 meses</option>
+				                </select>
+				                <label style="margin-top:10px;">Cantidad de veces que se repetirá</label>
+				                <input type="number" id="gastoRepeticionFijo" min="1" max="60" value="12">
+				            </div>
+				            
+				            <label>Concepto <input id="gastoDescripcionFijo" type="text" required /></label>
+				            <label>Monto <input id="gastoMontoFijo" type="number" step="0.01" required /></label>
+				            <label>Categoría <select id="gastoCategoriaFijo"></select></label>
+				            <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
+				            <label>📅 Fecha de Vencimiento <input id="gastoVencimientoFijo" type="date" required /></label>
+
+				            <label>Mes de impacto (Para asociar al mes correcto) <input type="month" id="gastoMesImpactoFijo"></label>
+
+				            <div style="margin: 10px 0; background: #222; padding: 15px; border-radius: 5px; border: 1px solid #444;">
+				                <label style="display:flex; align-items:center; gap:10px; margin:0; cursor:pointer;"><input type="checkbox" id="gastoPagadoFijo" style="width: 20px; height: 20px; accent-color: #2ac9bb;"> ✅ ¿Ya está pagado?</label>
+				                <div id="divFechaPagoRealFijo" style="display: none; margin-top: 15px; border-top: 1px solid #444; padding-top: 15px;">
+				                    <label style="margin:0; color: #2ac9bb;">📅 ¿Qué día lo pagaste? <input id="gastoFechaFijo" type="date" style="margin-top: 5px;" /></label>
+				                    <label style="margin-top: 15px; color: #2ac9bb;">🏦 ¿De dónde salió la plata? <select id="gastoMedioFijo" style="margin-top: 5px;"></select></label>
+				                </div>
+				            </div>
+				            
+				            <button type="submit" class="btn" style="margin-top: 15px; background-color: #f59e0b;">Guardar Fijo</button>
+				        </form>
+				    </div>
+				</div>
+
+				<div id="modalGastoVariable" class="modal">
+				    <div class="modal-content"><span class="close" onclick="document.getElementById('modalGastoVariable').style.display='none'">&times;</span>
+				        <h3 style="color: #ff6384;">🛒 Agregar Gasto Variable</h3>
+				        <p style="font-size: 0.85rem; color: #888; margin-bottom: 15px;">Se asume que esto ya se pagó en el momento.</p>
+				        <form id="formGastoVariable" class="form">
+				            <input type="hidden" id="gastoVariableId" value="">
+				            
+				            <label>Concepto <input id="gastoDescripcionVariable" type="text" required /></label>
+				            <label>Monto <input id="gastoMontoVariable" type="number" step="0.01" required /></label>
+				            <label>Categoría <select id="gastoCategoriaVariable"></select></label>
+				            <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
+				            <label>📅 Fecha del gasto <input id="gastoFechaVariable" type="date" required /></label>
+				            <label>Mes de impacto (Opcional) <input type="month" id="gastoMesImpactoVariable"></label>
+				            <label>🏦 ¿De dónde salió la plata? <select id="gastoMedioVariable" required></select></label>
+				            
+				            <button type="submit" class="btn" style="margin-top: 15px; background-color: #ff6384;">Guardar Variable</button>
+				        </form>
+				    </div>
+				</div>
                 
                 <div id="modalIngreso" class="modal">
                     <div class="modal-content">
@@ -412,23 +429,27 @@
                     </div>
                 </div>
 
-                <div id="modalEditarPrestamo" class="modal">
-                    <div class="modal-content" style="max-width: 400px;">
-                        <span class="close" onclick="document.getElementById('modalEditarPrestamo').style.display = 'none'">&times;</span>
-                        <h3 id="tituloEditarPrestamo">📝 Cargar montos del mes</h3>
-                        <form id="formEditarPrestamo" class="form">
-                            <input type="hidden" id="editPrestamoId">
-                            <input type="hidden" id="editPrestamoMesString">
-                            <label style="color: #ffce56;">Monto TOTAL de la Cuota ($) <input id="editPrestamoTotal" type="number" step="0.01" required /></label>
-                            <label style="color: #2ac9bb;">Lo que paga <span class="nombreDinamico">vos</span> ($) <input id="editPrestamoBelen" type="number" step="0.01" required /></label>
-                            <div style="background: #222; padding: 10px; margin-top: 10px; border-radius: 5px; text-align: center;">
-                                <p style="margin: 0; font-size: 0.8rem; color: #888;">El otro aportará automáticamente:</p>
-                                <h3 id="calculoAportado" style="margin: 5px 0 0 0; color: #fff;">$ 0.00</h3>
-                            </div>
-                            <button type="submit" class="btn" style="margin-top: 20px;">Guardar Montos</button>
-                        </form>
-                    </div>
-                </div>
+				<div id="modalEditarPrestamo" class="modal">
+				    <div class="modal-content" style="max-width: 400px;">
+				        <span class="close" onclick="document.getElementById('modalEditarPrestamo').style.display = 'none'">&times;</span>
+				        <h3 id="tituloEditarPrestamo">📝 Cargar montos del mes</h3>
+				        <form id="formEditarPrestamo" class="form">
+				            <input type="hidden" id="editPrestamoId">
+				            <input type="hidden" id="editPrestamoMesString">
+				            
+				            <label style="color: #334155; font-weight: 700;">Monto TOTAL de la Cuota ($) <input id="editPrestamoTotal" type="number" step="0.01" required /></label>
+				            
+				            <label style="color: #64748b; font-weight: 700;">Lo que paga la OTRA persona ($) <input id="editPrestamoOtro" type="number" step="0.01" required /></label>
+				            
+				            <div style="background: #f0fdfa; padding: 15px; margin-top: 15px; border-radius: 8px; border: 1px solid #ccfbf1; text-align: center;">
+				                <p style="margin: 0; font-size: 0.85rem; color: #0d9488; font-weight: 600;">Tu parte (<span class="nombreDinamico">vos</span>) será automáticamente:</p>
+				                <h3 id="calculoAportado" style="margin: 5px 0 0 0; color: #0f766e; font-size: 1.5rem;">$ 0.00</h3>
+				            </div>
+				            
+				            <button type="submit" class="btn" style="margin-top: 20px;">Guardar Montos</button>
+				        </form>
+				    </div>
+				</div>
                 
                 <div id="modalCategorias" class="modal">
                     <div class="modal-content">
@@ -503,17 +524,29 @@
                     </div>
                 </div>
 
-                <div id="modalProyeccion" class="modal">
-                    <div class="modal-content" style="max-width: 600px;">
-                        <span class="close" id="closeProyeccion" onclick="document.getElementById('modalProyeccion').style.display = 'none'">&times;</span>
-                        <h3>🎯 Proyección Mensual</h3>
-                        <table class="table" style="margin-bottom: 20px;">
-                            <thead><tr><th>Concepto</th><th>Ideal (%)</th><th>Tope Sugerido</th><th>Real Gastado</th><th>Estado</th></tr></thead>
-                            <tbody id="tablaProyeccionBody"></tbody>
-                        </table>
-                        <div style="background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444;" id="resumenCuentasProyeccion"></div>
-                    </div>
-                </div>
+				<div id="proyeccion" class="page">
+				    <div class="panel">
+				        <h3 style="color: var(--color-primario); margin-top: 0;">🎯 Proyección Mensual</h3>
+				        <p style="color: var(--texto-claro); margin-bottom: 25px;">Distribución sugerida y estado de tus cuentas.</p>
+				        
+				        <div class="table-wrapper tabla-con-scroll">
+				            <table class="table" style="margin-bottom: 20px;">
+				                <thead>
+				                    <tr>
+				                        <th>Concepto</th>
+				                        <th>Ideal (%)</th>
+				                        <th>Tope Sugerido</th>
+				                        <th>Real Gastado</th>
+				                        <th>Estado</th>
+				                    </tr>
+				                </thead>
+				                <tbody id="tablaProyeccionBody"></tbody>
+				            </table>
+				        </div>
+				        
+				        <div style="background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444;" id="resumenCuentasProyeccion"></div>
+				    </div>
+				</div>
 
                 <div id="message" class="toast"></div>
                 
@@ -553,6 +586,6 @@
             </section>
         </main>
     </div>
-    <script src="js/dashboard.js?v=152"></script>
+    <script src="js/dashboard.js?v=159"></script>
 </body>
 </html>
